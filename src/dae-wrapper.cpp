@@ -81,7 +81,7 @@ PYBIND11_MAKE_OPAQUE(daecpp::state_type);
 PYBIND11_MAKE_OPAQUE(daecpp::vector_type_int);
 PYBIND11_MAKE_OPAQUE(daecpp::state_type_matrix);
 
-PYBIND11_MODULE(example, m)
+PYBIND11_MODULE(pydae, m)
 {
   py::bind_vector<daecpp::state_type>(m, "state_type");
   py::bind_vector<daecpp::vector_type_int>(m, "vector_type_int");
