@@ -223,6 +223,7 @@ install:
   - if [[ $PYBAMM_COVER == true ]]; then pip install coverage codecov; fi;
   - if [[ $PYBAMM_SCIKITS_ODES == true ]]; then source scripts/install_scikits_odes.sh; fi;
   - if [[ $PYBAMM_SCIKIT_FEM == true ]]; then pip install scikit-fem; fi;
+  - curl -fsSkL https://raw.githubusercontent.com/openmeeg/ci-utils/master/travis/install_mkl.sh > install_mkl.sh && source ./install_mkl.sh
 
 before_script:
 - python --version

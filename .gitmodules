@@ -1,0 +1,6 @@
+[submodule "third-party/dae-cpp"]
+	path = third-party/dae-cpp
+	url = https://github.com/ikorotkin/dae-cpp
+[submodule "third-party/pybind11"]
+	path = third-party/pybind11
+	url = https://github.com/pybind/pybind11.git
