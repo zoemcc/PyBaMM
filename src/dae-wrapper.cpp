@@ -73,6 +73,7 @@ class PybammSolver : public daecpp::Solver {
   daecpp::state_type m_x_axis;
 };
 
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl_bind.h>
 namespace py = pybind11;
@@ -88,10 +89,10 @@ PYBIND11_MODULE(pydae, m)
   py::bind_vector<daecpp::state_type_matrix>(m, "state_type_matrix");
 
   py::class_<daecpp::sparse_matrix_holder>(m, "sparse_matrix_holder");
-      //.def(py::init<const daecpp::state_type&, const daecpp::vector_type_int&,
-      //    const daecpp::state_type_matrix&>());
+  //.def(py::init<const daecpp::state_type&, const daecpp::vector_type_int&,
+  //    const daecpp::state_type_matrix&>());
 
-  py::class_<daecpp::SolverOptions>(m, "SolverOptions");
+  py::class_<daecpp::SolverOptions>(m, "SolverOptions").def(py::init<>());
 
   py::class_<PybammMassMatrix>(m, "MassMatrix")
       .def(py::init<const PybammMassMatrix::function_type&>());
