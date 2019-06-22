@@ -92,38 +92,43 @@ PYBIND11_MODULE(pydae, m)
   //.def(py::init<const daecpp::state_type&, const daecpp::vector_type_int&,
   //    const daecpp::state_type_matrix&>());
 
-  py::class_<daecpp::SolverOptions>(m, "SolverOptions").def(py::init<>())
-    .def_readwrite("fact_every_iter", daecpp::SolverOptions::fact_every_iter)
-    .def_readwrite("time_stepping", daecpp::SolverOptions::time_stepping)
-    .def_readwrite("max_Newton_iter", daecpp::SolverOptions::max_Newton_iter)
-    .def_readwrite("atol", daecpp::SolverOptions::atol)
-    .def_readwrite("dt_eps_m", daecpp::SolverOptions::dt_eps_m)
-    .def_readwrite("value_max", daecpp::SolverOptions::value_max)
-    .def_readwrite("dt_init", daecpp::SolverOptions::dt_init)
-
-double t0 = 0.0;
-    double dt_min = dt_eps_m;
-    double dt_max = 100.0;
-    int verbosity = 1;
-    int dt_increase_threshold = 4;    // Time step amplification threshold
-    int dt_decrease_threshold = 8;    // Time step reduction threshold
-    double dt_increase_factor = 2.0;  // Time step amplification factor
-    double dt_decrease_factor = 2.0;  // Time step reduction factor
-    double dt_eta_min = 0.05;  // Monitor function lower threshold (A-SATS only)
-    double dt_eta_max = 0.5;  // Monitor function higher threshold (A-SATS only)
-    MKL_INT preconditioned_CGS = 0;
-    MKL_INT refinement_steps = 2;
-    MKL_INT parallel_fact_control = 0;
-    MKL_INT parallel_solve_control = 0;
-
-
+  py::class_<daecpp::SolverOptions>(m, "SolverOptions")
+      .def(py::init<>())
+      .def_readwrite("fact_every_iter", &daecpp::SolverOptions::fact_every_iter)
+      .def_readwrite("bdf_order", &daecpp::SolverOptions::bdf_order)
+      .def_readwrite("time_stepping", &daecpp::SolverOptions::time_stepping)
+      .def_readwrite("max_Newton_iter", &daecpp::SolverOptions::max_Newton_iter)
+      .def_readwrite("atol", &daecpp::SolverOptions::atol)
+      .def_readwrite("dt_eps_m", &daecpp::SolverOptions::dt_eps_m)
+      .def_readwrite("value_max", &daecpp::SolverOptions::value_max)
+      .def_readwrite("dt_init", &daecpp::SolverOptions::dt_init)
+      .def_readwrite("t0", &daecpp::SolverOptions::t0)
+      .def_readwrite("dt_min", &daecpp::SolverOptions::dt_min)
+      .def_readwrite("dt_max", &daecpp::SolverOptions::dt_max)
+      .def_readwrite("verbosity", &daecpp::SolverOptions::verbosity)
+      .def_readwrite(
+          "dt_increase_threshold", &daecpp::SolverOptions::dt_increase_threshold)
+      .def_readwrite(
+          "dt_decrease_threshold", &daecpp::SolverOptions::dt_decrease_threshold)
+      .def_readwrite("dt_increase_factor", &daecpp::SolverOptions::dt_increase_factor)
+      .def_readwrite("dt_decrease_factor", &daecpp::SolverOptions::dt_decrease_factor)
+      .def_readwrite("dt_eta_min", &daecpp::SolverOptions::dt_eta_min)
+      .def_readwrite("dt_eta_max", &daecpp::SolverOptions::dt_eta_max)
+      .def_readwrite("preconditioned_CGS", &daecpp::SolverOptions::preconditioned_CGS)
+      .def_readwrite("refinement_steps", &daecpp::SolverOptions::refinement_steps)
+      .def_readwrite(
+          "parallel_fact_control", &daecpp::SolverOptions::parallel_fact_control)
+      .def_readwrite(
+          "parallel_solve_control", &daecpp::SolverOptions::parallel_solve_control);
 
   py::class_<PybammMassMatrix>(m, "MassMatrix")
       .def(py::init<const PybammMassMatrix::function_type&>());
   py::class_<PybammRHS>(m, "RHS").def(py::init<const PybammRHS::function_type&>());
   py::class_<PybammJacobian>(m, "AnalyticalJacobian")
       .def(py::init<PybammRHS&, const PybammJacobian::function_type&>());
-  py::class_<daecpp::Jacobian>(m, "NumericalJacobian").def(py::init<PybammRHS&>());
+  py::class_<daecpp::Jacobian>(m, "NumericalJacobian")
+      .def(py::init<PybammRHS&>())
+      .def(py::init<PybammRHS&, const double>());
   py::class_<PybammSolver>(m, "Solver")
       .def(py::init<daecpp::RHS&, daecpp::Jacobian&, daecpp::MassMatrix&,
           daecpp::SolverOptions&>());
