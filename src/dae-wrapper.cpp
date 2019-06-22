@@ -92,7 +92,31 @@ PYBIND11_MODULE(pydae, m)
   //.def(py::init<const daecpp::state_type&, const daecpp::vector_type_int&,
   //    const daecpp::state_type_matrix&>());
 
-  py::class_<daecpp::SolverOptions>(m, "SolverOptions").def(py::init<>());
+  py::class_<daecpp::SolverOptions>(m, "SolverOptions").def(py::init<>())
+    .def_readwrite("fact_every_iter", daecpp::SolverOptions::fact_every_iter)
+    .def_readwrite("time_stepping", daecpp::SolverOptions::time_stepping)
+    .def_readwrite("max_Newton_iter", daecpp::SolverOptions::max_Newton_iter)
+    .def_readwrite("atol", daecpp::SolverOptions::atol)
+    .def_readwrite("dt_eps_m", daecpp::SolverOptions::dt_eps_m)
+    .def_readwrite("value_max", daecpp::SolverOptions::value_max)
+    .def_readwrite("dt_init", daecpp::SolverOptions::dt_init)
+
+double t0 = 0.0;
+    double dt_min = dt_eps_m;
+    double dt_max = 100.0;
+    int verbosity = 1;
+    int dt_increase_threshold = 4;    // Time step amplification threshold
+    int dt_decrease_threshold = 8;    // Time step reduction threshold
+    double dt_increase_factor = 2.0;  // Time step amplification factor
+    double dt_decrease_factor = 2.0;  // Time step reduction factor
+    double dt_eta_min = 0.05;  // Monitor function lower threshold (A-SATS only)
+    double dt_eta_max = 0.5;  // Monitor function higher threshold (A-SATS only)
+    MKL_INT preconditioned_CGS = 0;
+    MKL_INT refinement_steps = 2;
+    MKL_INT parallel_fact_control = 0;
+    MKL_INT parallel_solve_control = 0;
+
+
 
   py::class_<PybammMassMatrix>(m, "MassMatrix")
       .def(py::init<const PybammMassMatrix::function_type&>());
