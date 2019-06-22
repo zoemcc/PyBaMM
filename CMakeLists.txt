@@ -31,12 +31,21 @@ endif()
 
 message(STATUS "BLAS Libraries: ${BLAS_LIBRARIES}")
 
-add_subdirectory(third-party/pybind11)
-pybind11_add_module(daecpp src/dae-wrapper.cpp)
+# dae-cpp
+set(dae_root third-party/dae-cpp)
+FILE(GLOB DAE_CPP_SOURCES ${dae_root}/src/*.cpp)
+FILE(GLOB DAE_CPP_INCLUDES ${dae_root}/src/*.h)
 
-target_compile_definitions(daecpp PRIVATE ${BLA_DEFINITIONS})
-target_link_libraries(daecpp PRIVATE ${BLAS_LIBRARIES})
-target_include_directories(daecpp PRIVATE 
+add_library(daecpp SHARED ${DAE_CPP_SOURCES})
+
+target_compile_definitions(daecpp PUBLIC ${BLA_DEFINITIONS})
+target_link_libraries(daecpp PUBLIC ${BLAS_LIBRARIES})
+target_include_directories(daecpp PUBLIC
   ${BLA_INCLUDE_DIR}
-  ${CMAKE_SOURCE_DIR}/third-party/dae-cpp/src
+  ${dae_root}/src
   )
+
+add_subdirectory(third-party/pybind11)
+pybind11_add_module(pydae src/dae-wrapper.cpp)
+
+target_link_libraries(pydae PRIVATE daecpp)
