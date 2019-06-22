@@ -264,7 +264,7 @@ else()
                 string(REGEX REPLACE "-l([^\ ]+)" "\\1" i ${i})
                 string(REGEX REPLACE "-L.*" "" i ${i})
 
-                find_library(FULLPATH_LIB ${i} PATHS "${MKL_LIBRARY_DIR}")
+                find_library(FULLPATH_LIB ${i} PATHS ${MKL_LIBRARY_DIR})
 
                 if (FULLPATH_LIB)
                     list(APPEND MKL_LIBRARIES ${FULLPATH_LIB})
