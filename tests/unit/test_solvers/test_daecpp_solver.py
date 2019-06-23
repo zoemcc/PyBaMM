@@ -5,6 +5,7 @@ import pybamm
 import unittest
 import pydae
 
+
 class TestDaeCppSolver(unittest.TestCase):
     def test_wrapper(self):
         # Use Robertson example from dae-cpp
@@ -77,7 +78,6 @@ class TestDaeCppSolver(unittest.TestCase):
             J.ia[2] = 6
             J.ia[3] = 9
 
-
         # Solution time 0 <= t <= t1
         t1 = 4.0e6
 
@@ -105,14 +105,13 @@ class TestDaeCppSolver(unittest.TestCase):
             # parameters defined in solver_options.h
             opt = pydae.SolverOptions()
 
-            opt.dt_init               = 1.0e-6    # Change initial time step
-            opt.dt_max                = t1 / 100  # Set maximum time step
-            opt.time_stepping         = 1         # S-SATS works better here
+            opt.dt_init = 1.0e-6    # Change initial time step
+            opt.dt_max = t1 / 100  # Set maximum time step
+            opt.time_stepping = 1         # S-SATS works better here
             opt.dt_increase_threshold = 2         # Time step amplification threshold
-            opt.atol                  = 1e-6      # Absolute tolerance
-            opt.bdf_order             = 6         # Set BDF-6
-            opt.verbosity             = 0         # turn off output
-
+            opt.atol = 1e-6      # Absolute tolerance
+            opt.bdf_order = 6         # Set BDF-6
+            opt.verbosity = 0         # turn off output
 
             # Create an instance of the solver with particular RHS, Mass matrix,
             # Jacobian and solver options
@@ -137,9 +136,8 @@ class TestDaeCppSolver(unittest.TestCase):
                 print("Numerical Jacobian:")
             print("\tTotal relative error: {} %".format(result))
             print("\tConservation law absolute deviation: {}".format(conservation))
-            self.assertLessEqual(result,5)
-            self.assertLessEqual(conservation,1e-10)
-
+            self.assertLessEqual(result, 5)
+            self.assertLessEqual(conservation, 1e-10)
 
 
 if __name__ == "__main__":
