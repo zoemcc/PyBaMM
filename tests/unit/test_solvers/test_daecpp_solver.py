@@ -137,6 +137,8 @@ class TestDaeCppSolver(unittest.TestCase):
                 print("Numerical Jacobian:")
             print("\tTotal relative error: {} %".format(result))
             print("\tConservation law absolute deviation: {}".format(conservation))
+            self.assertLessEqual(result,5)
+            self.assertLessEqual(conservation,1e-10)
 
 
 
