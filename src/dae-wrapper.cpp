@@ -88,7 +88,10 @@ PYBIND11_MODULE(pydae, m)
   py::bind_vector<daecpp::vector_type_int>(m, "vector_type_int");
   py::bind_vector<daecpp::state_type_matrix>(m, "state_type_matrix");
 
-  py::class_<daecpp::sparse_matrix_holder>(m, "sparse_matrix_holder");
+  py::class_<daecpp::sparse_matrix_holder>(m, "sparse_matrix_holder")
+      .def_readwrite("A", &daecpp::sparse_matrix_holder::A)
+      .def_readwrite("ja", &daecpp::sparse_matrix_holder::ja)
+      .def_readwrite("ia", &daecpp::sparse_matrix_holder::ia);
   //.def(py::init<const daecpp::state_type&, const daecpp::vector_type_int&,
   //    const daecpp::state_type_matrix&>());
 
@@ -121,15 +124,20 @@ PYBIND11_MODULE(pydae, m)
       .def_readwrite(
           "parallel_solve_control", &daecpp::SolverOptions::parallel_solve_control);
 
-  py::class_<PybammMassMatrix>(m, "MassMatrix")
+  py::class_<daecpp::MassMatrix>(m, "BaseMassMatrix");
+  py::class_<PybammMassMatrix, daecpp::MassMatrix>(m, "MassMatrix")
       .def(py::init<const PybammMassMatrix::function_type&>());
-  py::class_<PybammRHS>(m, "RHS").def(py::init<const PybammRHS::function_type&>());
-  py::class_<PybammJacobian>(m, "AnalyticalJacobian")
-      .def(py::init<PybammRHS&, const PybammJacobian::function_type&>());
+  py::class_<daecpp::RHS>(m, "BaseRHS");
+  py::class_<PybammRHS, daecpp::RHS>(m, "RHS").def(
+      py::init<const PybammRHS::function_type&>());
   py::class_<daecpp::Jacobian>(m, "NumericalJacobian")
       .def(py::init<PybammRHS&>())
       .def(py::init<PybammRHS&, const double>());
-  py::class_<PybammSolver>(m, "Solver")
+  py::class_<PybammJacobian, daecpp::Jacobian>(m, "AnalyticalJacobian")
+      .def(py::init<PybammRHS&, const PybammJacobian::function_type&>());
+  py::class_<daecpp::Solver>(m, "BaseSolver");
+  py::class_<PybammSolver, daecpp::Solver>(m, "Solver")
       .def(py::init<daecpp::RHS&, daecpp::Jacobian&, daecpp::MassMatrix&,
-          daecpp::SolverOptions&>());
+          daecpp::SolverOptions&>())
+      .def("__call__", &PybammSolver::operator());
 }
