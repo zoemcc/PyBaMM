@@ -83,6 +83,15 @@ pip uninstall pybamm
 
 ## Optional dependencies
 
+### Intel MKL
+
+I needed to preload the intel mkl libraries like so (see
+https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/748309)
+
+```bash
+export LD_PRELOAD=/opt/intel/mkl/lib/intel64/libmkl_def.so:/opt/intel/mkl/lib/intel64/libmkl_avx2.so:/opt/intel/mkl/lib/intel64/libmkl_core.so:/opt/intel/mkl/lib/intel64/libmkl_intel_lp64.so:/opt/intel/mkl/lib/intel64/libmkl_intel_thread.so:/opt/intel/lib/intel64_lin/libiomp5.so
+```
+
 ### [scikits.odes](https://github.com/bmcage/odes)
 
 Users can install [scikits.odes](https://github.com/bmcage/odes) in order to use the

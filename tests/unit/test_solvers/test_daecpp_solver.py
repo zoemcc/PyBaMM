@@ -37,7 +37,6 @@ class TestDaeCppSolver(unittest.TestCase):
             M.ia[1] = 1
             M.ia[2] = 2
             M.ia[3] = 3
-            print("calling fun_mass_matrix",M.ia)
 
         def fun_rhs(x, f, t):
             f[0] = -0.04 * x[0] + 1.0e4 * x[1] * x[2]
@@ -86,7 +85,7 @@ class TestDaeCppSolver(unittest.TestCase):
         # Initial conditions.
         # We will use slightly inconsistent initial condition to test
         # initialization.
-        x = pydae.state_type([1, 0, 1e-3])
+        x0 = pydae.state_type([1, 0, 1e-3])
 
         # Set up the RHS of the problem.
         # Class MyRHS inherits abstract RHS class from dae-cpp library.
@@ -96,30 +95,48 @@ class TestDaeCppSolver(unittest.TestCase):
         # MyMassMatrix inherits abstract MassMatrix class from dae-cpp library.
         mass = pydae.MassMatrix(fun_mass_matrix)
 
-        # Create an instance of the solver options and update some of the solver
-        # parameters defined in solver_options.h
-        opt = pydae.SolverOptions()
-
-        opt.dt_init               = 1.0e-6    # Change initial time step
-        opt.dt_max                = t1 / 100  # Set maximum time step
-        opt.time_stepping         = 1         # S-SATS works better here
-        opt.dt_increase_threshold = 2         # Time step amplification threshold
-        opt.atol                  = 1e-6      # Absolute tolerance
-        opt.bdf_order             = 6         # Set BDF-6
-
         # We can override Jacobian class from dae-cpp library and provide
         # analytical Jacobian. We shall do this for single precision:
         jac = pydae.AnalyticalJacobian(rhs, fun_jacobian)
         jac_numerical = pydae.NumericalJacobian(rhs, 1e-10)
 
-        # Create an instance of the solver with particular RHS, Mass matrix,
-        # Jacobian and solver options
-        solve = pydae.Solver(rhs, jac, mass, opt)
-        solve_numJ = pydae.Solver(rhs, jac_numerical, mass, opt)
+        for jacobian in [jac, jac_numerical]:
+            # Create an instance of the solver options and update some of the solver
+            # parameters defined in solver_options.h
+            opt = pydae.SolverOptions()
 
-        # Now we are ready to solve the set of DAEs
-        status = solve_numJ(x, t1)
+            opt.dt_init               = 1.0e-6    # Change initial time step
+            opt.dt_max                = t1 / 100  # Set maximum time step
+            opt.time_stepping         = 1         # S-SATS works better here
+            opt.dt_increase_threshold = 2         # Time step amplification threshold
+            opt.atol                  = 1e-6      # Absolute tolerance
+            opt.bdf_order             = 6         # Set BDF-6
+            opt.verbosity             = 0         # turn off output
 
+
+            # Create an instance of the solver with particular RHS, Mass matrix,
+            # Jacobian and solver options
+            solve = pydae.Solver(rhs, jacobian, mass, opt)
+
+            # Now we are ready to solve the set of DAEs
+            x = pydae.state_type(x0)
+            status = solve(x, t1)
+
+            # Compare results with MATLAB ode15s solution
+            x_ref = [0.00051675, 2.068e-9, 0.99948324]
+            conservation = abs(x[0] + x[1] + x[2] - 1)
+
+            # Find total relative deviation from the reference solution
+            result = 0.0
+            for xi, x_refi in zip(x, x_ref):
+                result += abs(xi - x_refi) / x_refi * 100
+
+            if jacobian is jac:
+                print("Analytical Jacobian:")
+            else:
+                print("Numerical Jacobian:")
+            print("\tTotal relative error: {} %".format(result))
+            print("\tConservation law absolute deviation: {}".format(conservation))
 
 
 
