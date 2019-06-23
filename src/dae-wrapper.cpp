@@ -2,16 +2,20 @@
 
 #include "solver.h"
 
+#include <iostream>
+
 class PybammMassMatrix : public daecpp::MassMatrix {
   public:
-  using function_type = std::function<void(daecpp::sparse_matrix_holder&)>;
+  using function_type = std::function<void(daecpp::sparse_matrix_holder*)>;
 
   PybammMassMatrix(const function_type& f)
       : m_f(f)
   {
   }
 
-  void operator()(daecpp::sparse_matrix_holder& M) { m_f(M); }
+  void operator()(daecpp::sparse_matrix_holder& M) {
+    m_f(&M); 
+  }
 
   private:
   function_type m_f;
@@ -20,14 +24,14 @@ class PybammMassMatrix : public daecpp::MassMatrix {
 class PybammRHS : public daecpp::RHS {
   public:
   using function_type = std::function<void(
-      const daecpp::state_type&, daecpp::state_type&, const double)>;
+      const daecpp::state_type*, daecpp::state_type*, const double)>;
   PybammRHS(const function_type& f)
       : m_f(f)
   {
   }
   void operator()(const daecpp::state_type& x, daecpp::state_type& f, const double t)
   {
-    m_f(x, f, t);
+    m_f(&x, &f, t);
   }
 
   private:
@@ -37,7 +41,7 @@ class PybammRHS : public daecpp::RHS {
 class PybammJacobian : public daecpp::Jacobian {
   public:
   using function_type = std::function<void(
-      daecpp::sparse_matrix_holder&, const daecpp::state_type&, const double)>;
+      daecpp::sparse_matrix_holder*, const daecpp::state_type*, const double)>;
 
   PybammJacobian(PybammRHS& rhs, const function_type& f)
       : Jacobian(rhs)
@@ -48,7 +52,7 @@ class PybammJacobian : public daecpp::Jacobian {
   void operator()(
       daecpp::sparse_matrix_holder& J, const daecpp::state_type& x, const double t)
   {
-    m_f(J, x, t);
+    m_f(&J, &x, t);
   }
 
   private:
@@ -85,11 +89,16 @@ PYBIND11_MAKE_OPAQUE(daecpp::state_type_matrix);
 PYBIND11_MODULE(pydae, m)
 {
   py::bind_vector<daecpp::state_type>(m, "state_type")
-      .def("resize", (void (daecpp::state_type::*)(size_t)) & daecpp::state_type::resize);
-  py::bind_vector<daecpp::vector_type_int>(m, "vector_type_int");
+      .def("resize",
+          (void (daecpp::state_type::*)(size_t)) & daecpp::state_type::resize);
+  py::bind_vector<daecpp::vector_type_int>(m, "vector_type_int")
+      .def("resize",
+          (void (daecpp::vector_type_int::*)(size_t))
+              & daecpp::vector_type_int::resize);
   py::bind_vector<daecpp::state_type_matrix>(m, "state_type_matrix");
 
   py::class_<daecpp::sparse_matrix_holder>(m, "sparse_matrix_holder")
+      .def(py::init<>())
       .def_readwrite("A", &daecpp::sparse_matrix_holder::A)
       .def_readwrite("ja", &daecpp::sparse_matrix_holder::ja)
       .def_readwrite("ia", &daecpp::sparse_matrix_holder::ia);
@@ -127,18 +136,22 @@ PYBIND11_MODULE(pydae, m)
 
   py::class_<daecpp::MassMatrix>(m, "BaseMassMatrix");
   py::class_<PybammMassMatrix, daecpp::MassMatrix>(m, "MassMatrix")
-      .def(py::init<const PybammMassMatrix::function_type&>());
+      .def(py::init<const PybammMassMatrix::function_type&>())
+      .def("__call__", &PybammMassMatrix::operator());
   py::class_<daecpp::RHS>(m, "BaseRHS");
-  py::class_<PybammRHS, daecpp::RHS>(m, "RHS").def(
-      py::init<const PybammRHS::function_type&>());
+  py::class_<PybammRHS, daecpp::RHS>(m, "RHS")
+      .def(py::init<const PybammRHS::function_type&>())
+      .def("__call__", &PybammRHS::operator());
   py::class_<daecpp::Jacobian>(m, "NumericalJacobian")
       .def(py::init<PybammRHS&>())
-      .def(py::init<PybammRHS&, const double>());
+      .def(py::init<PybammRHS&, const double>())
+      .def("__call__", &daecpp::Jacobian::operator());
   py::class_<PybammJacobian, daecpp::Jacobian>(m, "AnalyticalJacobian")
-      .def(py::init<PybammRHS&, const PybammJacobian::function_type&>());
+      .def(py::init<PybammRHS&, const PybammJacobian::function_type&>())
+      .def("__call__", &PybammJacobian::operator());
   py::class_<daecpp::Solver>(m, "BaseSolver");
   py::class_<PybammSolver, daecpp::Solver>(m, "Solver")
-      .def(py::init<daecpp::RHS&, daecpp::Jacobian&, daecpp::MassMatrix&,
+      .def(py::init<daecpp::RHS&, daecpp::Jacobian&, PybammMassMatrix&,
           daecpp::SolverOptions&>())
       .def("__call__", &PybammSolver::operator());
 }

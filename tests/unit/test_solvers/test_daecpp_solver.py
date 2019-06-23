@@ -18,10 +18,9 @@ class TestDaeCppSolver(unittest.TestCase):
         # Initial conditions are: x1 = 1, x2 = 0, x3 = 0.
 
         def fun_mass_matrix(M):
-            if len(M.A) != 3:
-                M.A.extend([0]*3)   # Matrix size
-                M.ja.resize(3)  # Matrix size
-                M.ia.resize(4)  # Matrix size + 1
+            M.A.resize(3)   # Matrix size
+            M.ja.resize(3)  # Matrix size
+            M.ia.resize(4)  # Matrix size + 1
 
             # Non-zero and/or diagonal elements
             M.A[0] = 1
@@ -38,6 +37,7 @@ class TestDaeCppSolver(unittest.TestCase):
             M.ia[1] = 1
             M.ia[2] = 2
             M.ia[3] = 3
+            print("calling fun_mass_matrix",M.ia)
 
         def fun_rhs(x, f, t):
             f[0] = -0.04 * x[0] + 1.0e4 * x[1] * x[2]
@@ -109,7 +109,6 @@ class TestDaeCppSolver(unittest.TestCase):
 
         # We can override Jacobian class from dae-cpp library and provide
         # analytical Jacobian. We shall do this for single precision:
-#ifdef DAE_SINGLE
         jac = pydae.AnalyticalJacobian(rhs, fun_jacobian)
         jac_numerical = pydae.NumericalJacobian(rhs, 1e-10)
 
@@ -119,7 +118,7 @@ class TestDaeCppSolver(unittest.TestCase):
         solve_numJ = pydae.Solver(rhs, jac_numerical, mass, opt)
 
         # Now we are ready to solve the set of DAEs
-        status = solve(x, t1)
+        status = solve_numJ(x, t1)
 
 
 
