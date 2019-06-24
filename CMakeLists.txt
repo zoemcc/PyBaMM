@@ -11,6 +11,7 @@ if ("$ENV{MKLROOT}" STREQUAL "")
 endif()
 
 # user defined options for MKL
+option(BLA_STATIC "Use static linking" True)
 option(MKL_USE_parallel "Use MKL parallel" True)
 option(MKL_USE_sdl "Single Dynamic Library or static/dynamic" False)
 set(MKL_USE_interface "lp64" CACHE STRING "for Intel(R)64 compatible arch: ilp64/lp64 or for ia32 arch: cdecl/stdcall")
@@ -30,6 +31,8 @@ if (MKL_FOUND)
 endif()
 
 message(STATUS "BLAS Libraries: ${BLAS_LIBRARIES}")
+
+set (CMAKE_CXX_STANDARD 11)
 
 # dae-cpp
 set(dae_root third-party/dae-cpp)
