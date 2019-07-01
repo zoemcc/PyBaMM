@@ -219,6 +219,7 @@ from .solvers.scipy_solver import ScipySolver
 from .solvers.scikits_dae_solver import ScikitsDaeSolver
 from .solvers.scikits_ode_solver import ScikitsOdeSolver
 from .solvers.scikits_ode_solver import have_scikits_odes
+from .solvers.daecpp_dae_solver import DaecppDaeSolver
 
 #
 # other
