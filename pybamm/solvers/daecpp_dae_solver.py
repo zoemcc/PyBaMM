@@ -3,9 +3,9 @@
 # (see `https://github.com/ikorotkin/dae-cpp`)
 #
 import pybamm
-
-import numpy as np
 import pydae
+import numpy as np
+
 #import scipy.sparse as sparse
 
 
@@ -62,7 +62,9 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             #y = np.array(x)
             #ydot = np.zeros_like(y)
             #f[:] = residuals(t, y, ydot)
-            f = pydae.state_type(residuals(t, x))
+            #f = pydae.state_type(residuals(t, x))  # this doesn't work
+            for i, fi in enumerate(residuals(t, np.array(x))):
+                f[i] = fi
 
         # dae-cpp Mass Matrix
         # TODO: Currently returns identity matrix of size y0.size.
@@ -93,17 +95,19 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
         # dae-cpp solver option
         opt = pydae.SolverOptions()
-        opt.atol = self.tol
-        #opt.verbosity = 1
-        #opt.dt_init = 0.001
+        opt.atol = 1e-12 #self.tol
+        opt.verbosity = 0
+        #opt.dt_init = 0.0001
         opt.time_stepping = 1
+        opt.bdf_order = 2
+        #opt.dt_max = 0.0001
 
         dae_mass = pydae.MassMatrix(fun_mass_matrix)
         dae_rhs = pydae.RHS(fun_rhs)
 
         if jacobian:
             # TEMPORARY for testing
-            dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
+            dae_jacobian = pydae.NumericalJacobian(dae_rhs, 1e-10)
             #raise NotImplementedError
             
             #jac_y0_t0 = jacobian(t_eval[0], y0)
@@ -121,7 +125,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
             #extra_options.update({"jacfn": jacfn})
         else:
-            dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
+            dae_jacobian = pydae.NumericalJacobian(dae_rhs, 1e-10)
 
         #if events:
         #    extra_options.update({"rootfn": rootfn, "nr_rootfns": len(events)})
@@ -136,7 +140,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         x = pydae.state_type(y0)
 
         # solve
-        status = 0
         first_pass = True
         for t1 in t_eval:
             # currently t1 cannot be 0 for dae-cpp. TODO: remove this restriction
@@ -147,9 +150,12 @@ class DaecppDaeSolver(pybamm.DaeSolver):
                 continue
             else:
                 # solution for time t1
-                status += dae_solve(x, t1)  # x will be overwritten
+                status = dae_solve(x, t1)  # x will be overwritten
+                if(status != 0):
+                    break
                 sol_t1 = np.reshape(np.array(x), (-1, 1))
-            
+                print("###### t1, x: " + str(np.exp(-0.1*t1)) + "  " + str(x) + " status = " + str(status))
+
             if(first_pass):
                 y_sol = sol_t1
                 t_sol = np.array([t1])
@@ -157,7 +163,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             else:
                 y_sol = np.append(y_sol, sol_t1, axis=1)
                 t_sol = np.append(t_sol, t1)
-            print("###### t1, x: " + str(t1) + "  " + str(x))
 
         #dae_solver = scikits_odes.dae(self.method, eqsres, **extra_options)
         #sol = dae_solver.solve(t_eval, y0, ydot0)
