@@ -53,23 +53,16 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         jacobian : method, optional
             A function that takes in t and y and returns the Jacobian. If
             None, the solver will approximate the Jacobian.
-            (see `SUNDIALS docs. <https://computation.llnl.gov/projects/sundials>`).
         """
 
         # dae-cpp RHS
         def fun_rhs(x, f, t):
-            # solver works with ydot set to zero
-            #y = np.array(x)
-            #ydot = np.zeros_like(y)
-            #f[:] = residuals(t, y, ydot)
-            #f = pydae.state_type(residuals(t, x))  # this doesn't work
-            for i, fi in enumerate(residuals(t, np.array(x))):
-                f[i] = fi
+            y = np.array(x)
+            f[:] = pydae.state_type(residuals(t, y))
 
         # dae-cpp Mass Matrix
         # TODO: Currently returns identity matrix of size y0.size.
-        # In general it should convert mass_matrix or return identity matrix if
-        # mass_matrix=None
+        # In general it should convert mass_matrix or return identity matrix for ODE
         def fun_mass_matrix(M):
             size = y0.size
             M.A.resize(size)
@@ -85,29 +78,25 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             # To close the matrix
             M.ia[size] = size
 
-        #def eqsres(t, y, ydot, return_residuals):
-        #    return_residuals[:] = residuals(t, y, ydot)
-
         #def rootfn(t, y, ydot, return_root):
         #    return_root[:] = [event(t, y) for event in events]
 
         #extra_options = {"old_api": False, "rtol": self.tol, "atol": self.tol}
 
-        # dae-cpp solver option
+        # dae-cpp solver options
         opt = pydae.SolverOptions()
-        opt.atol = 1e-12 #self.tol
+        opt.atol = self.tol
         opt.verbosity = 0
-        #opt.dt_init = 0.0001
         opt.time_stepping = 1
-        opt.bdf_order = 2
-        #opt.dt_max = 0.0001
+        opt.dt_increase_threshold = 2
 
         dae_mass = pydae.MassMatrix(fun_mass_matrix)
         dae_rhs = pydae.RHS(fun_rhs)
 
         if jacobian:
-            # TEMPORARY for testing
-            dae_jacobian = pydae.NumericalJacobian(dae_rhs, 1e-10)
+            # TEMPORARY here for testing
+            # TODO: Use analytical jacobian
+            dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
             #raise NotImplementedError
             
             #jac_y0_t0 = jacobian(t_eval[0], y0)
@@ -125,13 +114,10 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
             #extra_options.update({"jacfn": jacfn})
         else:
-            dae_jacobian = pydae.NumericalJacobian(dae_rhs, 1e-10)
+            dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
 
         #if events:
         #    extra_options.update({"rootfn": rootfn, "nr_rootfns": len(events)})
-
-        # solver works with ydot0 set to zero
-        #ydot0 = np.zeros_like(y0)
 
         # set the solver up
         dae_solve = pydae.Solver(dae_rhs, dae_jacobian, dae_mass, opt)
@@ -141,9 +127,11 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
         # solve
         first_pass = True
+        status = -1
         for t1 in t_eval:
-            # currently t1 cannot be 0 for dae-cpp. TODO: remove this restriction
-            if(t1 == 0):
+            # currently t1 cannot be 0 for dae-cpp.
+            # TODO: remove this restriction in dae-cpp
+            if t1 == 0:
                 y_sol = np.reshape(np.array(x), (-1, 1))
                 t_sol = np.array([0])
                 first_pass = False
@@ -151,12 +139,11 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             else:
                 # solution for time t1
                 status = dae_solve(x, t1)  # x will be overwritten
-                if(status != 0):
+                if status != 0:
                     break
                 sol_t1 = np.reshape(np.array(x), (-1, 1))
-                print("###### t1, x: " + str(np.exp(-0.1*t1)) + "  " + str(x) + " status = " + str(status))
 
-            if(first_pass):
+            if first_pass:
                 y_sol = sol_t1
                 t_sol = np.array([t1])
                 first_pass = False
@@ -171,9 +158,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         if status == 0:
             # success
             termination = "final time"
-            #return pybamm.Solution(
-            #    t_sol, np.transpose(y_sol), termination
-            #)
             return pybamm.Solution(t_sol, y_sol, termination)
         else:
             # error

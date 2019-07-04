@@ -166,7 +166,7 @@ class TestDaeCppSolver(unittest.TestCase):
         y0 = np.array([1])
         t_eval = np.linspace(0, 1, 100)
         solution = solver.integrate(exponential_decay, y0, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t))
+        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4)
         self.assertEqual(solution.termination, "final time")
 
     def test_ode_integrate_failure(self):
@@ -205,7 +205,7 @@ class TestDaeCppSolver(unittest.TestCase):
         np.testing.assert_array_less(solution.t, 0.5)
         self.assertEqual(solution.termination, "event")
 
-        # Expnonential growth
+        # Exponential growth
         solver = pybamm.DaecppDaeSolver(tol=1e-8)
 
         def exponential_growth(t, y):
@@ -250,7 +250,7 @@ class TestDaeCppSolver(unittest.TestCase):
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=1e-4
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
         )
 
         y0 = np.array([0.0, 0.0])
@@ -259,28 +259,28 @@ class TestDaeCppSolver(unittest.TestCase):
 
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=1e-4
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
         )
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
 
-        solver = pybamm.DaecppDaeSolver(tol=1e-8, linsolver="spgmr")
+        solver = pybamm.DaecppDaeSolver(tol=1e-8)
 
         solution = solver.integrate(linear_ode, y0, t_eval, jacobian=jacobian)
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=1e-4
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
         )
 
         solution = solver.integrate(linear_ode, y0, t_eval, jacobian=sparse_jacobian)
 
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=1e-4
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
         )
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
 
-        # Nonlinear exponential grwoth
+        # Nonlinear exponential growth
         solver = pybamm.DaecppDaeSolver(tol=1e-8)
 
         def exponential_growth(t, y):
@@ -297,36 +297,36 @@ class TestDaeCppSolver(unittest.TestCase):
 
         solution = solver.integrate(exponential_growth, y0, t_eval, jacobian=jacobian)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-4)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-4
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
         )
 
         solution = solver.integrate(
             exponential_growth, y0, t_eval, jacobian=sparse_jacobian
         )
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-4)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-4
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
         )
 
-        solver = pybamm.DaecppDaeSolver(tol=1e-8, linsolver="spgmr")
+        solver = pybamm.DaecppDaeSolver(tol=1e-8)
 
         solution = solver.integrate(exponential_growth, y0, t_eval, jacobian=jacobian)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-4)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-4
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
         )
 
         solution = solver.integrate(
             exponential_growth, y0, t_eval, jacobian=sparse_jacobian
         )
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-4)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-4
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
         )
 
     def test_dae_integrate(self):
