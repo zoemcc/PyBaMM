@@ -57,25 +57,58 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         # dae-cpp RHS
         def fun_rhs(x, f, t):
             y = np.array(x)
-            f[:] = pydae.state_type(residuals(t, y))
+            try:
+                f[:] = pydae.state_type(residuals(t, y))
+            except TypeError:
+                ydot = np.zeros_like(y)
+                f[:] = pydae.state_type(residuals(t, y, ydot))
 
         # dae-cpp Mass Matrix
-        # TODO: Currently returns identity matrix of size y0.size.
-        # In general it should convert mass_matrix or return identity matrix for ODE
-        def fun_mass_matrix(M):
-            size = y0.size
-            M.A.resize(size)
-            M.ja.resize(size)
-            M.ia.resize(size + 1)
-            for i in range(0, size):
-                # Non-zero and/or diagonal elements
-                M.A[i] = 1
-                # Column index of each element given above
-                M.ja[i] = i
-                # Index of the first element for each row
-                M.ia[i] = i
-            # To close the matrix
-            M.ia[size] = size
+        if mass_matrix is not None:
+            if sparse.issparse(mass_matrix):
+                def fun_mass_matrix(M):
+                    size = y0.size
+                    jsize = mass_matrix.data.size
+
+                    M.A.resize(jsize)
+                    M.ja.resize(jsize)
+                    M.ia.resize(size + 1)
+
+                    M.A[:] = pydae.state_type(mass_matrix.data)
+                    M.ja[:] = pydae.vector_type_int(mass_matrix.indices)
+                    M.ia[:] = pydae.vector_type_int(mass_matrix.indptr)
+            else:
+                def fun_mass_matrix(M):
+                    mass_eval = sparse.csr_matrix(mass_matrix)
+
+                    size = y0.size
+                    jsize = mass_eval.data.size
+
+                    M.A.resize(jsize)
+                    M.ja.resize(jsize)
+                    M.ia.resize(size + 1)
+
+                    M.A[:] = pydae.state_type(mass_eval.data)
+                    M.ja[:] = pydae.vector_type_int(mass_eval.indices)
+                    M.ia[:] = pydae.vector_type_int(mass_eval.indptr)
+        else:
+            # Defines identity mass matrix if mass_matrix is None
+            def fun_mass_matrix(M):
+                size = y0.size
+
+                M.A.resize(size)
+                M.ja.resize(size)
+                M.ia.resize(size + 1)
+
+                for i in range(0, size):
+                    # Non-zero and/or diagonal elements
+                    M.A[i] = 1
+                    # Column index of each element given above
+                    M.ja[i] = i
+                    # Index of the first element for each row
+                    M.ia[i] = i
+                # To close the matrix
+                M.ia[size] = size
 
         #def rootfn(t, y, ydot, return_root):
         #    return_root[:] = [event(t, y) for event in events]
@@ -96,7 +129,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             jac_y0_t0 = jacobian(t_eval[0], y0)
 
             if sparse.issparse(jac_y0_t0):
-
                 def fun_jacobian(J, x, t):
                     jac_eval = jacobian(t, np.array(x))
 
@@ -110,13 +142,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
                     J.A[:] = pydae.state_type(jac_eval.data)
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
-
-            #    def jacfn(t, y, ydot, residuals, cj, J):
-            #        jac_eval = jacobian(t, y) - cj * mass_matrix
-            #        J[:][:] = jac_eval.toarray()
-
             else:
-
                 def fun_jacobian(J, x, t):
                     jac_eval = sparse.csr_matrix(jacobian(t, np.array(x)))
 
@@ -131,12 +157,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
 
-            #    def jacfn(t, y, ydot, residuals, cj, J):
-            #        jac_eval = jacobian(t, y) - cj * mass_matrix
-            #        J[:][:] = jac_eval
-
             dae_jacobian = pydae.AnalyticalJacobian(dae_rhs, fun_jacobian)
-
         else:
             dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
 

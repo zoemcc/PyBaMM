@@ -336,9 +336,13 @@ class TestDaeCppSolver(unittest.TestCase):
         def constant_growth_dae(t, y, ydot):
             return [0.5 * np.ones_like(y[0]) - ydot[0], 2 * y[0] - y[1]]
 
+        mass_matrix = np.array([[1.0, 0.0], [0.0, 0.0]])
+
         y0 = np.array([0, 0])
         t_eval = np.linspace(0, 1, 100)
-        solution = solver.integrate(constant_growth_dae, y0, t_eval)
+        solution = solver.integrate(
+            constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
+        )
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(1.0 * solution.t, solution.y[1])
@@ -349,11 +353,19 @@ class TestDaeCppSolver(unittest.TestCase):
         def exponential_decay_dae(t, y, ydot):
             return [-0.1 * y[0] - ydot[0], 2 * y[0] - y[1]]
 
+        mass_matrix = np.array([[1.0, 0.0], [0.0, 0.0]])
+
         y0 = np.array([1, 2])
         t_eval = np.linspace(0, 1, 100)
-        solution = solver.integrate(exponential_decay_dae, y0, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t))
-        np.testing.assert_allclose(solution.y[1], 2 * np.exp(-0.1 * solution.t))
+        solution = solver.integrate(
+            exponential_decay_dae, y0, t_eval, mass_matrix=mass_matrix
+        )
+        np.testing.assert_allclose(
+            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4
+        )
+        np.testing.assert_allclose(
+            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-4
+        )
         self.assertEqual(solution.termination, "final time")
 
     def test_dae_integrate_failure(self):
@@ -362,10 +374,14 @@ class TestDaeCppSolver(unittest.TestCase):
         def constant_growth_dae(t, y, ydot):
             return [0.5 * np.ones_like(y[0]) - ydot[0], 2 * y[0] - y[1]]
 
+        mass_matrix = np.array([[1.0, 0.0], [0.0, 0.0]])
+
         y0 = np.array([0, 1])
         t_eval = np.linspace(0, 1, 100)
         with self.assertRaises(pybamm.SolverError):
-            solver.integrate(constant_growth_dae, y0, t_eval)
+            solver.integrate(
+                constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
+            )
 
     def test_dae_integrate_bad_ics(self):
         # Constant
@@ -380,6 +396,8 @@ class TestDaeCppSolver(unittest.TestCase):
         def constant_growth_dae_algebraic(t, y):
             return np.array([constant_growth_dae(t, y, [0])[1]])
 
+        mass_matrix = np.array([[1.0, 0.0], [0.0, 0.0]])
+
         y0_guess = np.array([0, 1])
         t_eval = np.linspace(0, 1, 100)
         y0 = solver.calculate_consistent_initial_conditions(
@@ -388,7 +406,9 @@ class TestDaeCppSolver(unittest.TestCase):
         # check y0
         np.testing.assert_array_equal(y0, [0, 0])
         # check dae solutions
-        solution = solver.integrate(constant_growth_dae, y0, t_eval)
+        solution = solver.integrate(
+            constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
+        )
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(1.0 * solution.t, solution.y[1])
@@ -399,11 +419,19 @@ class TestDaeCppSolver(unittest.TestCase):
         def exponential_decay_dae(t, y, ydot):
             return [-0.1 * y[0] - ydot[0], 2 * y[0] - y[1]]
 
+        mass_matrix = np.array([[1.0, 0.0], [0.0, 0.0]])
+
         y0 = np.array([1, 2])
         t_eval = np.linspace(0, 1, 100)
-        solution = solver.integrate(exponential_decay_dae, y0, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t))
-        np.testing.assert_allclose(solution.y[1], 2 * np.exp(-0.1 * solution.t))
+        solution = solver.integrate(
+            exponential_decay_dae, y0, t_eval, mass_matrix=mass_matrix
+        )
+        np.testing.assert_allclose(
+            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4
+        )
+        np.testing.assert_allclose(
+            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-4
+        )
 
     def test_dae_integrate_with_event(self):
         # Constant
@@ -511,7 +539,9 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(
+            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4
+        )
 
         # Test time
         self.assertGreater(
@@ -714,7 +744,9 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(
+            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4
+        )
 
 
 if __name__ == "__main__":
