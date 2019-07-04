@@ -5,8 +5,7 @@
 import pybamm
 import pydae
 import numpy as np
-
-#import scipy.sparse as sparse
+import scipy.sparse as sparse
 
 
 class DaecppDaeSolver(pybamm.DaeSolver):
@@ -94,25 +93,50 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         dae_rhs = pydae.RHS(fun_rhs)
 
         if jacobian:
-            # TEMPORARY here for testing
-            # TODO: Use analytical jacobian
-            dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
-            #raise NotImplementedError
-            
-            #jac_y0_t0 = jacobian(t_eval[0], y0)
-            #if sparse.issparse(jac_y0_t0):
+            jac_y0_t0 = jacobian(t_eval[0], y0)
+
+            if sparse.issparse(jac_y0_t0):
+
+                def fun_jacobian(J, x, t):
+                    jac_eval = jacobian(t, np.array(x))
+
+                    size = y0.size
+                    jsize = jac_eval.data.size
+
+                    J.A.resize(jsize)
+                    J.ja.resize(jsize)
+                    J.ia.resize(size + 1)
+
+                    J.A[:] = pydae.state_type(jac_eval.data)
+                    J.ja[:] = pydae.vector_type_int(jac_eval.indices)
+                    J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
 
             #    def jacfn(t, y, ydot, residuals, cj, J):
             #        jac_eval = jacobian(t, y) - cj * mass_matrix
             #        J[:][:] = jac_eval.toarray()
 
-            #else:
+            else:
+
+                def fun_jacobian(J, x, t):
+                    jac_eval = sparse.csr_matrix(jacobian(t, np.array(x)))
+
+                    size = y0.size
+                    jsize = jac_eval.data.size
+
+                    J.A.resize(jsize)
+                    J.ja.resize(jsize)
+                    J.ia.resize(size + 1)
+
+                    J.A[:] = pydae.state_type(jac_eval.data)
+                    J.ja[:] = pydae.vector_type_int(jac_eval.indices)
+                    J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
 
             #    def jacfn(t, y, ydot, residuals, cj, J):
             #        jac_eval = jacobian(t, y) - cj * mass_matrix
             #        J[:][:] = jac_eval
 
-            #extra_options.update({"jacfn": jacfn})
+            dae_jacobian = pydae.AnalyticalJacobian(dae_rhs, fun_jacobian)
+
         else:
             dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
 
