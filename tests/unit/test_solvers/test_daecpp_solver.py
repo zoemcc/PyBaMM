@@ -378,10 +378,12 @@ class TestDaeCppSolver(unittest.TestCase):
 
         y0 = np.array([0, 1])
         t_eval = np.linspace(0, 1, 100)
-        with self.assertRaises(pybamm.SolverError):
-            solver.integrate(
-                constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
-            )
+        solution = solver.integrate(
+            constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
+        )
+        np.testing.assert_array_equal(solution.t, t_eval)
+        np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
+        np.testing.assert_allclose(1.0 * solution.t, solution.y[1])
 
     def test_dae_integrate_bad_ics(self):
         # Constant
