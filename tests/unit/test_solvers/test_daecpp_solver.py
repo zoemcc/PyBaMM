@@ -639,8 +639,10 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
-        np.testing.assert_allclose(solution.y[-1], 2 * np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+        )
 
         # Test time
         self.assertGreater(
@@ -664,8 +666,10 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
-        np.testing.assert_allclose(solution.y[-1], 2 * np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+        )
 
     def test_model_solver_dae_events(self):
         # Create model
@@ -727,8 +731,10 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
-        np.testing.assert_allclose(solution.y[-1], 2 * np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+        )
 
     def test_solve_ode_model_with_dae_solver(self):
         # Create model

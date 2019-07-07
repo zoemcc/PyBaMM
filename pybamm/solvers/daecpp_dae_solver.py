@@ -118,7 +118,10 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
             if sparse.issparse(jac_y0_t0):
                 def fun_jacobian(J, x, t):
-                    jac_eval = jacobian(t, np.array(x)) + eps_rounding*sparse.eye(y0.size)
+                    jac_eval = \
+                        jacobian(t, np.array(x)) + eps_rounding * sparse.eye(y0.size)
+                    # make sure the matrix is in CSR format
+                    jac_eval = sparse.csr_matrix(jac_eval)
 
                     isize = jac_eval.indptr.size
                     jsize = jac_eval.data.size
@@ -130,13 +133,12 @@ class DaecppDaeSolver(pybamm.DaeSolver):
                     J.A[:] = pydae.state_type(jac_eval.data)
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
-
-                    #print("Sparse J.A: " + str(J.A))
-                    #print("Sparse J.ia: " + str(J.ia))
-                    #print("Sparse J.ja: " + str(J.ja))
             else:
                 def fun_jacobian(J, x, t):
-                    jac_eval = sparse.csr_matrix(jacobian(t, np.array(x))) + eps_rounding*sparse.eye(y0.size)
+                    jac_eval = sparse.csr_matrix(jacobian(t, np.array(x))) + \
+                        eps_rounding * sparse.eye(y0.size)
+                    # make sure the matrix is in CSR format
+                    jac_eval = sparse.csr_matrix(jac_eval)
 
                     isize = jac_eval.indptr.size
                     jsize = jac_eval.data.size
@@ -149,25 +151,22 @@ class DaecppDaeSolver(pybamm.DaeSolver):
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
 
-                    #print("NON-Sparse J.A: " + str(J.A))
-                    #print("NON-Sparse J.ia: " + str(J.ia))
-                    #print("NON-Sparse J.ja: " + str(J.ja))
-
+            # Set up analytical Jacobian for dae-cpp
             dae_jacobian = pydae.AnalyticalJacobian(dae_rhs, fun_jacobian)
         else:
+            # Let the solver estimate Jacobian matrix with the given tolerance
             dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
-            #print("numerical Jacobian")
 
         #if events:
         #    extra_options.update({"rootfn": rootfn, "nr_rootfns": len(events)})
 
-        # set the solver up
+        # Set the solver up
         dae_solve = pydae.Solver(dae_rhs, dae_jacobian, dae_mass, opt)
 
-        # initial condition
+        # Initial condition
         x = pydae.state_type(y0)
 
-        # solve
+        # Solve
         first_pass = True
         status = -1
         for t1 in t_eval:
