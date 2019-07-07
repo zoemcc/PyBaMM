@@ -15,12 +15,12 @@ class DaecppDaeSolver(pybamm.DaeSolver):
     ----------
     method : str, optional
         The method to use in solve_ivp (default is "BDF")
-    tolerance : float, optional
+    tol : float, optional
         The tolerance for the solver (default is 1e-8). Set as the both reltol and
         abstol in solve_ivp.
     root_method : str, optional
         The method to use to find initial conditions (default is "lm")
-    tolerance : float, optional
+    root_tol : float, optional
         The tolerance for the initial-condition solver (default is 1e-6).
     """
 
@@ -54,6 +54,41 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             None, the solver will approximate the Jacobian.
         """
 
+        # A value that close to double rounding error, 1e-14 should work
+        eps_rounding = 1e-14
+
+        # Evaluate the Mass Matrix for dae-cpp solver
+        if mass_matrix is not None:
+            if sparse.issparse(mass_matrix):
+                mass_eval = mass_matrix + eps_rounding * sparse.eye(y0.size)
+            else:
+                mass_eval = \
+                    sparse.csr_matrix(mass_matrix) + eps_rounding * sparse.eye(y0.size)
+            # make sure the matrix is in CSR format
+            mass_eval = sparse.csr_matrix(mass_eval)
+        else:
+            # Defines identity mass matrix if mass_matrix is None
+            mass_eval = sparse.csr_matrix(sparse.eye(y0.size))
+
+        # dae-cpp Mass Matrix (created only once per solver call, since it does not
+        # depend on time in dae-cpp)
+        pydae_mass_holder = pydae.sparse_matrix_holder()
+        isize = mass_eval.indptr.size
+        jsize = mass_eval.data.size
+
+        pydae_mass_holder.A.resize(jsize)
+        pydae_mass_holder.ja.resize(jsize)
+        pydae_mass_holder.ia.resize(isize)
+
+        pydae_mass_holder.A[:] = pydae.state_type(mass_eval.data)
+        pydae_mass_holder.ja[:] = pydae.vector_type_int(mass_eval.indices)
+        pydae_mass_holder.ia[:] = pydae.vector_type_int(mass_eval.indptr)
+
+        def fun_mass_matrix(M):
+            M.A = pydae_mass_holder.A
+            M.ia = pydae_mass_holder.ia
+            M.ja = pydae_mass_holder.ja
+
         # dae-cpp RHS
         def fun_rhs(x, f, t):
             y = np.array(x)
@@ -62,53 +97,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             except TypeError:
                 ydot = np.zeros_like(y)
                 f[:] = pydae.state_type(residuals(t, y, ydot))
-
-        # dae-cpp Mass Matrix
-        if mass_matrix is not None:
-            if sparse.issparse(mass_matrix):
-                def fun_mass_matrix(M):
-                    size = y0.size
-                    jsize = mass_matrix.data.size
-
-                    M.A.resize(jsize)
-                    M.ja.resize(jsize)
-                    M.ia.resize(size + 1)
-
-                    M.A[:] = pydae.state_type(mass_matrix.data)
-                    M.ja[:] = pydae.vector_type_int(mass_matrix.indices)
-                    M.ia[:] = pydae.vector_type_int(mass_matrix.indptr)
-            else:
-                def fun_mass_matrix(M):
-                    mass_eval = sparse.csr_matrix(mass_matrix)
-
-                    size = y0.size
-                    jsize = mass_eval.data.size
-
-                    M.A.resize(jsize)
-                    M.ja.resize(jsize)
-                    M.ia.resize(size + 1)
-
-                    M.A[:] = pydae.state_type(mass_eval.data)
-                    M.ja[:] = pydae.vector_type_int(mass_eval.indices)
-                    M.ia[:] = pydae.vector_type_int(mass_eval.indptr)
-        else:
-            # Defines identity mass matrix if mass_matrix is None
-            def fun_mass_matrix(M):
-                size = y0.size
-
-                M.A.resize(size)
-                M.ja.resize(size)
-                M.ia.resize(size + 1)
-
-                for i in range(0, size):
-                    # Non-zero and/or diagonal elements
-                    M.A[i] = 1
-                    # Column index of each element given above
-                    M.ja[i] = i
-                    # Index of the first element for each row
-                    M.ia[i] = i
-                # To close the matrix
-                M.ia[size] = size
 
         #def rootfn(t, y, ydot, return_root):
         #    return_root[:] = [event(t, y) for event in events]
@@ -130,36 +118,45 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
             if sparse.issparse(jac_y0_t0):
                 def fun_jacobian(J, x, t):
-                    jac_eval = jacobian(t, np.array(x))
+                    jac_eval = jacobian(t, np.array(x)) + eps_rounding*sparse.eye(y0.size)
 
-                    size = y0.size
+                    isize = jac_eval.indptr.size
                     jsize = jac_eval.data.size
 
                     J.A.resize(jsize)
                     J.ja.resize(jsize)
-                    J.ia.resize(size + 1)
+                    J.ia.resize(isize)
 
                     J.A[:] = pydae.state_type(jac_eval.data)
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
+
+                    #print("Sparse J.A: " + str(J.A))
+                    #print("Sparse J.ia: " + str(J.ia))
+                    #print("Sparse J.ja: " + str(J.ja))
             else:
                 def fun_jacobian(J, x, t):
-                    jac_eval = sparse.csr_matrix(jacobian(t, np.array(x)))
+                    jac_eval = sparse.csr_matrix(jacobian(t, np.array(x))) + eps_rounding*sparse.eye(y0.size)
 
-                    size = y0.size
+                    isize = jac_eval.indptr.size
                     jsize = jac_eval.data.size
 
                     J.A.resize(jsize)
                     J.ja.resize(jsize)
-                    J.ia.resize(size + 1)
+                    J.ia.resize(isize)
 
                     J.A[:] = pydae.state_type(jac_eval.data)
                     J.ja[:] = pydae.vector_type_int(jac_eval.indices)
                     J.ia[:] = pydae.vector_type_int(jac_eval.indptr)
+
+                    #print("NON-Sparse J.A: " + str(J.A))
+                    #print("NON-Sparse J.ia: " + str(J.ia))
+                    #print("NON-Sparse J.ja: " + str(J.ja))
 
             dae_jacobian = pydae.AnalyticalJacobian(dae_rhs, fun_jacobian)
         else:
             dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
+            #print("numerical Jacobian")
 
         #if events:
         #    extra_options.update({"rootfn": rootfn, "nr_rootfns": len(events)})
