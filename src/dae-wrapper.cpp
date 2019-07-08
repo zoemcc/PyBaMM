@@ -13,9 +13,7 @@ class PybammMassMatrix : public daecpp::MassMatrix {
   {
   }
 
-  void operator()(daecpp::sparse_matrix_holder& M) {
-    m_f(&M); 
-  }
+  void operator()(daecpp::sparse_matrix_holder& M) { m_f(&M); }
 
   private:
   function_type m_f;
@@ -25,17 +23,32 @@ class PybammRHS : public daecpp::RHS {
   public:
   using function_type = std::function<void(
       const daecpp::state_type*, daecpp::state_type*, const double)>;
+  using stop_type = std::function<bool(const daecpp::state_type*, const double)>;
+
   PybammRHS(const function_type& f)
       : m_f(f)
   {
   }
+
+  void set_stop_condition(const stop_type& f) { m_stop_f = f; }
+
   void operator()(const daecpp::state_type& x, daecpp::state_type& f, const double t)
   {
     m_f(&x, &f, t);
   }
 
+  bool stop_condition(const daecpp::state_type& x, const double t)
+  {
+    if (m_stop_f) {
+      return m_stop_f(&x, t);
+    } else {
+      return false;
+    }
+  }
+
   private:
   function_type m_f;
+  stop_type m_stop_f;
 };
 
 class PybammJacobian : public daecpp::Jacobian {
@@ -64,17 +77,21 @@ class PybammSolver : public daecpp::Solver {
   PybammSolver(daecpp::RHS& rhs, daecpp::Jacobian& jac, daecpp::MassMatrix& mass,
       daecpp::SolverOptions& opt)
       : Solver(rhs, jac, mass, opt)
+      , m_observe(false)
   {
   }
 
   void observer(daecpp::state_type& x, const double t)
   {
-    m_x_axis.push_back(t);
-    m_x.push_back(x);
+    if (m_observe) {
+      m_x_axis.push_back(t);
+      m_x.push_back(x);
+    }
   }
 
   daecpp::state_type_matrix m_x;
   daecpp::state_type m_x_axis;
+  bool m_observe;
 };
 
 #include <pybind11/functional.h>
@@ -141,6 +158,7 @@ PYBIND11_MODULE(pydae, m)
   py::class_<daecpp::RHS>(m, "BaseRHS");
   py::class_<PybammRHS, daecpp::RHS>(m, "RHS")
       .def(py::init<const PybammRHS::function_type&>())
+      .def("set_stop_condition", &PybammRHS::set_stop_condition)
       .def("__call__", &PybammRHS::operator());
   py::class_<daecpp::Jacobian>(m, "NumericalJacobian")
       .def(py::init<PybammRHS&>())
