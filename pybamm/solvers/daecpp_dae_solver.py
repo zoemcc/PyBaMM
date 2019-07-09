@@ -54,24 +54,23 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             None, the solver will approximate the Jacobian.
         """
 
-        # A value that close to double rounding error, 1e-14 should work
-        eps_rounding = 1e-14
+        # A very small value to fill zero diagonal elements to match dae-cpp CSR format
+        eps = 1e-30
 
         # Evaluate the Mass Matrix for dae-cpp solver
         if mass_matrix is not None:
             if sparse.issparse(mass_matrix):
-                mass_eval = mass_matrix + eps_rounding * sparse.eye(y0.size)
+                mass_eval = mass_matrix + eps * sparse.eye(y0.size)
             else:
-                mass_eval = \
-                    sparse.csr_matrix(mass_matrix) + eps_rounding * sparse.eye(y0.size)
+                mass_eval = sparse.csr_matrix(mass_matrix) + eps * sparse.eye(y0.size)
             # make sure the matrix is in CSR format
             mass_eval = sparse.csr_matrix(mass_eval)
         else:
             # Defines identity mass matrix if mass_matrix is None
             mass_eval = sparse.csr_matrix(sparse.eye(y0.size))
 
-        # dae-cpp Mass Matrix (created only once per solver call, since it does not
-        # depend on time in dae-cpp)
+        # Mass Matrix can be created only once per solver call, since it does not
+        # depend on time in dae-cpp
         pydae_mass_holder = pydae.sparse_matrix_holder()
         isize = mass_eval.indptr.size
         jsize = mass_eval.data.size
@@ -84,6 +83,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         pydae_mass_holder.ja[:] = pydae.vector_type_int(mass_eval.indices)
         pydae_mass_holder.ia[:] = pydae.vector_type_int(mass_eval.indptr)
 
+        # dae-cpp Mass Matrix
         def fun_mass_matrix(M):
             M.A = pydae_mass_holder.A
             M.ia = pydae_mass_holder.ia
@@ -97,11 +97,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             except TypeError:
                 ydot = np.zeros_like(y)
                 f[:] = pydae.state_type(residuals(t, y, ydot))
-
-        #def rootfn(t, y, ydot, return_root):
-        #    return_root[:] = [event(t, y) for event in events]
-
-        #extra_options = {"old_api": False, "rtol": self.tol, "atol": self.tol}
 
         # dae-cpp solver options
         opt = pydae.SolverOptions()
@@ -117,8 +112,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
 
             if sparse.issparse(jac_y0_t0):
                 def fun_jacobian(J, x, t):
-                    jac_eval = \
-                        jacobian(t, np.array(x)) + eps_rounding * sparse.eye(y0.size)
+                    jac_eval = jacobian(t, np.array(x)) + eps * sparse.eye(y0.size)
                     # make sure the matrix is in CSR format
                     jac_eval = sparse.csr_matrix(jac_eval)
 
@@ -135,7 +129,7 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             else:
                 def fun_jacobian(J, x, t):
                     jac_eval = sparse.csr_matrix(jacobian(t, np.array(x))) + \
-                        eps_rounding * sparse.eye(y0.size)
+                        eps * sparse.eye(y0.size)
                     # make sure the matrix is in CSR format
                     jac_eval = sparse.csr_matrix(jac_eval)
 
@@ -157,7 +151,9 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             dae_jacobian = pydae.NumericalJacobian(dae_rhs, self.tol)
 
         #if events:
-        #    extra_options.update({"rootfn": rootfn, "nr_rootfns": len(events)})
+        #    def stop_event(x, t):
+        #        return True
+        #    dae_rhs.set_stop_condition(stop_event)
 
         # Set the solver up
         dae_solve = pydae.Solver(dae_rhs, dae_jacobian, dae_mass, opt)
@@ -169,19 +165,11 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         first_pass = True
         status = -1
         for t1 in t_eval:
-            # currently t1 cannot be 0 for dae-cpp.
-            # TODO: remove this restriction in dae-cpp
-            if t1 == 0:
-                y_sol = np.reshape(np.array(x), (-1, 1))
-                t_sol = np.array([0])
-                first_pass = False
-                continue
-            else:
-                # solution for time t1
-                status = dae_solve(x, t1)  # x will be overwritten
-                if status != 0:
-                    break
-                sol_t1 = np.reshape(np.array(x), (-1, 1))
+            status = dae_solve(x, t1)  # x will be overwritten
+            if status != 0:
+                break
+
+            sol_t1 = np.reshape(np.array(x), (-1, 1))  # solution at time t1
 
             if first_pass:
                 y_sol = sol_t1
@@ -190,9 +178,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
             else:
                 y_sol = np.append(y_sol, sol_t1, axis=1)
                 t_sol = np.append(t_sol, t1)
-
-        #dae_solver = scikits_odes.dae(self.method, eqsres, **extra_options)
-        #sol = dae_solver.solve(t_eval, y0, ydot0)
 
         # return solution
         if status == 0:
