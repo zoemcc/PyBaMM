@@ -104,19 +104,19 @@ class TestDaeCppSolver(unittest.TestCase):
         jac = pydae.AnalyticalJacobian(rhs, fun_jacobian)
         jac_numerical = pydae.NumericalJacobian(rhs, 1e-10)
 
+        # Create an instance of the solver options and update some of the solver
+        # parameters defined in solver_options.h
+        opt = pydae.SolverOptions()
+
+        opt.dt_init = 1.0e-6  # Change initial time step
+        opt.dt_max = t1 / 100  # Set maximum time step
+        opt.time_stepping = 1  # S-SATS works better here
+        opt.dt_increase_threshold = 2  # Time step amplification threshold
+        opt.atol = 1e-6  # Absolute tolerance
+        opt.bdf_order = 6  # Set BDF-6
+        opt.verbosity = 0  # turn off output
+
         for jacobian in [jac, jac_numerical]:
-            # Create an instance of the solver options and update some of the solver
-            # parameters defined in solver_options.h
-            opt = pydae.SolverOptions()
-
-            opt.dt_init = 1.0e-6    # Change initial time step
-            opt.dt_max = t1 / 100  # Set maximum time step
-            opt.time_stepping = 1         # S-SATS works better here
-            opt.dt_increase_threshold = 2         # Time step amplification threshold
-            opt.atol = 1e-6      # Absolute tolerance
-            opt.bdf_order = 6         # Set BDF-6
-            opt.verbosity = 0         # turn off output
-
             # Create an instance of the solver with particular RHS, Mass matrix,
             # Jacobian and solver options
             solve = pydae.Solver(rhs, jacobian, mass, opt)
@@ -149,14 +149,11 @@ class TestDaeCppSolver(unittest.TestCase):
             return True
 
         rhs.set_stop_condition(stop)
-        opt = pydae.SolverOptions()
-        opt.dt_init = 1.0e-7
-        opt.dt_max = 1.0e-7
         solve = pydae.Solver(rhs, jacobian, mass, opt)
         x = pydae.state_type(x0)
         status = solve(x, t1)
         self.assertEqual(status, 0)
-        # TODO: how to tell if the solver terminated due to stop condtion?
+        # TODO: how to tell if the solver terminated due to stop condition?
 
     def test_ode_integrate(self):
         # Constant
@@ -180,7 +177,7 @@ class TestDaeCppSolver(unittest.TestCase):
         y0 = np.array([1])
         t_eval = np.linspace(0, 1, 100)
         solution = solver.integrate(exponential_decay, y0, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-6)
         self.assertEqual(solution.termination, "final time")
 
     def test_ode_integrate_failure(self):
@@ -237,7 +234,7 @@ class TestDaeCppSolver(unittest.TestCase):
             exponential_growth, y0, t_eval, events=[ysq_eq_7, y_eq_9]
         )
         self.assertLess(len(solution.t), len(t_eval))
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-4)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0])
         np.testing.assert_array_less(solution.y, 9)
         np.testing.assert_array_less(solution.y ** 2, 7)
         self.assertEqual(solution.termination, "event")
@@ -264,7 +261,7 @@ class TestDaeCppSolver(unittest.TestCase):
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], atol=1e-4
         )
 
         y0 = np.array([0.0, 0.0])
@@ -273,7 +270,7 @@ class TestDaeCppSolver(unittest.TestCase):
 
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], atol=1e-4
         )
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
 
@@ -283,14 +280,14 @@ class TestDaeCppSolver(unittest.TestCase):
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], atol=1e-4
         )
 
         solution = solver.integrate(linear_ode, y0, t_eval, jacobian=sparse_jacobian)
 
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], rtol=5e-3
+            2.0 * solution.t - 0.25 * solution.t ** 2, solution.y[1], atol=1e-4
         )
         np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
 
@@ -311,36 +308,36 @@ class TestDaeCppSolver(unittest.TestCase):
 
         solution = solver.integrate(exponential_growth, y0, t_eval, jacobian=jacobian)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=2e-4)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=2e-4
         )
 
         solution = solver.integrate(
             exponential_growth, y0, t_eval, jacobian=sparse_jacobian
         )
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=2e-4)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=2e-4
         )
 
         solver = pybamm.DaecppDaeSolver(tol=1e-8)
 
         solution = solver.integrate(exponential_growth, y0, t_eval, jacobian=jacobian)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=2e-4)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=2e-4
         )
 
         solution = solver.integrate(
             exponential_growth, y0, t_eval, jacobian=sparse_jacobian
         )
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=1e-2)
+        np.testing.assert_allclose(np.exp(solution.t), solution.y[0], rtol=2e-4)
         np.testing.assert_allclose(
-            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=1e-2
+            np.exp(1 + solution.t - np.exp(solution.t)), solution.y[1], rtol=2e-4
         )
 
     def test_dae_integrate(self):
@@ -375,10 +372,10 @@ class TestDaeCppSolver(unittest.TestCase):
             exponential_decay_dae, y0, t_eval, mass_matrix=mass_matrix
         )
         np.testing.assert_allclose(
-            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4
+            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-6
         )
         np.testing.assert_allclose(
-            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-4
+            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-6
         )
         self.assertEqual(solution.termination, "final time")
 
@@ -396,8 +393,9 @@ class TestDaeCppSolver(unittest.TestCase):
             constant_growth_dae, y0, t_eval, mass_matrix=mass_matrix
         )
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(0.5 * solution.t, solution.y[0])
-        np.testing.assert_allclose(1.0 * solution.t, solution.y[1])
+        # Exclude ICs
+        np.testing.assert_allclose(0.5 * solution.t[1:], solution.y[0][1:])
+        np.testing.assert_allclose(1.0 * solution.t[1:], solution.y[1][1:])
 
     def test_dae_integrate_bad_ics(self):
         # Constant
@@ -443,10 +441,10 @@ class TestDaeCppSolver(unittest.TestCase):
             exponential_decay_dae, y0, t_eval, mass_matrix=mass_matrix
         )
         np.testing.assert_allclose(
-            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-4
+            solution.y[0], np.exp(-0.1 * solution.t), rtol=1e-6
         )
         np.testing.assert_allclose(
-            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-4
+            solution.y[1], 2 * np.exp(-0.1 * solution.t), rtol=1e-6
         )
 
     def test_dae_integrate_with_event(self):
@@ -556,7 +554,7 @@ class TestDaeCppSolver(unittest.TestCase):
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4
+            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-6
         )
 
         # Test time
@@ -582,7 +580,7 @@ class TestDaeCppSolver(unittest.TestCase):
         solver = pybamm.DaecppDaeSolver(tol=1e-9)
         t_eval = np.linspace(0, 10, 100)
         solution = solver.solve(model, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t))
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
         np.testing.assert_array_less(solution.y[0], 1.5)
         np.testing.assert_array_less(solution.y[0], 1.25)
 
@@ -631,10 +629,12 @@ class TestDaeCppSolver(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             model.variables["var1"].evaluate(T, Y),
             np.ones((N, T.size)) * np.exp(T[np.newaxis, :]),
+            decimal=3
         )
         np.testing.assert_array_almost_equal(
             model.variables["var2"].evaluate(T, Y),
             np.ones((N, T.size)) * (T[np.newaxis, :] - np.exp(T[np.newaxis, :])),
+            decimal=3
         )
 
     def test_model_solver_dae(self):
@@ -655,9 +655,9 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-6)
         np.testing.assert_allclose(
-            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-6
         )
 
         # Test time
@@ -682,9 +682,9 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-6)
         np.testing.assert_allclose(
-            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-6
         )
 
     def test_model_solver_dae_events(self):
@@ -747,9 +747,9 @@ class TestDaeCppSolver(unittest.TestCase):
         t_eval = np.linspace(0, 1, 100)
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
-        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4)
+        np.testing.assert_allclose(solution.y[0], np.exp(0.1 * solution.t), rtol=1e-6)
         np.testing.assert_allclose(
-            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-4
+            solution.y[-1], 2 * np.exp(0.1 * solution.t), rtol=1e-6
         )
 
     def test_solve_ode_model_with_dae_solver(self):
@@ -767,7 +767,7 @@ class TestDaeCppSolver(unittest.TestCase):
         solution = solver.solve(model, t_eval)
         np.testing.assert_array_equal(solution.t, t_eval)
         np.testing.assert_allclose(
-            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-4
+            solution.y[0], np.exp(0.1 * solution.t), rtol=1e-6
         )
 
 
