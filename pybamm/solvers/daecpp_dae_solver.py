@@ -108,7 +108,6 @@ class DaecppDaeSolver(pybamm.DaeSolver):
         opt.atol = self.tol
         opt.verbosity = 0
         opt.time_stepping = 1
-        opt.dt_increase_threshold = 2
 
         dae_mass = pydae.MassMatrix(fun_mass_matrix)
         dae_rhs = pydae.RHS(fun_rhs)
