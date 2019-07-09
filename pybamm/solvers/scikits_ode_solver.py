@@ -39,6 +39,7 @@ class ScikitsOdeSolver(pybamm.OdeSolver):
 
         super().__init__(method, tol)
         self.linsolver = linsolver
+        self.name = "Scikits ODE"
 
     def integrate(
         self, derivs, y0, t_eval, events=None, mass_matrix=None, jacobian=None

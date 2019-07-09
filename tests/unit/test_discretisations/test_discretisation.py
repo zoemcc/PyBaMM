@@ -624,30 +624,36 @@ class TestDiscretise(unittest.TestCase):
         # concatenation of variables as the key
         c = pybamm.Variable("c", domain=["negative electrode"])
         N = pybamm.grad(c)
+        d = pybamm.Variable("d", domain=["separator"])
+        M = pybamm.grad(d)
         model = pybamm.BaseModel()
         model.rhs = {c: pybamm.div(N)}
-        model.initial_conditions = {c: pybamm.Scalar(3)}
+        model.algebraic = {d: pybamm.div(M)}
+        model.initial_conditions = {c: pybamm.Scalar(3), d: pybamm.Scalar(0)}
         model.boundary_conditions = {
-            c: {"left": (0, "Neumann"), "right": (0, "Neumann")}
+            c: {"left": (0, "Neumann"), "right": (0, "Neumann")},
+            d: {"left": (0, "Neumann"), "right": (0, "Neumann")},
         }
         model.check_well_posedness()
 
         # create discretisation
         disc = get_discretisation_for_testing()
         mesh = disc.mesh
-        submesh = mesh["negative electrode"]
 
         discretised_model = disc.process_model(model, inplace=False)
         y0 = discretised_model.concatenated_initial_conditions
         np.testing.assert_array_equal(
-            y0, 3 * np.ones_like(submesh[0].nodes[:, np.newaxis])
+            y0,
+            np.concatenate(
+                [
+                    3
+                    * np.ones_like(mesh["negative electrode"][0].nodes[:, np.newaxis]),
+                    np.zeros_like(mesh["separator"][0].nodes[:, np.newaxis]),
+                ]
+            ),
         )
 
-        # grad and div are identity operators here
-        np.testing.assert_array_equal(
-            y0, discretised_model.concatenated_rhs.evaluate(None, y0)
-        )
-        discretised_model.check_well_posedness()
+        discretised_model.check_well_posedness(post_discretisation=True)
 
     def test_broadcast(self):
         whole_cell = ["negative electrode", "separator", "positive electrode"]
