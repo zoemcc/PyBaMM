@@ -144,6 +144,20 @@ class TestDaeCppSolver(unittest.TestCase):
             self.assertLessEqual(conservation, 1e-10)
             self.assertEqual(status, 0)
 
+        # test stop condition
+        def stop(x, t):
+            return True
+
+        rhs.set_stop_condition(stop)
+        opt = pydae.SolverOptions()
+        opt.dt_init = 1.0e-7
+        opt.dt_max = 1.0e-7
+        solve = pydae.Solver(rhs, jacobian, mass, opt)
+        x = pydae.state_type(x0)
+        status = solve(x, t1)
+        self.assertEqual(status, 0)
+        # TODO: how to tell if the solver terminated due to stop condtion?
+
     def test_ode_integrate(self):
         # Constant
         solver = pybamm.DaecppDaeSolver(tol=1e-8)
