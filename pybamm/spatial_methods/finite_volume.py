@@ -186,27 +186,35 @@ class FiniteVolume(pybamm.SpatialMethod):
         matrix = csr_matrix(kron(eye(second_dim_len), sub_matrix))
         return pybamm.Matrix(matrix)
 
-    def integral(self, domain, symbol, discretised_symbol):
+    def laplacian(self, symbol, discretised_symbol, boundary_conditions):
+        """
+        Laplacian operator, implemented as div(grad(.))
+        See :meth:`pybamm.SpatialMethod.laplacian`
+        """
+        grad = self.gradient(symbol, discretised_symbol, boundary_conditions)
+        return self.divergence(grad, grad, boundary_conditions)
+
+    def integral(self, child, discretised_child):
         """Vector-vector dot product to implement the integral operator. """
         # Calculate integration vector
-        integration_vector = self.definite_integral_vector(domain)
+        integration_vector = self.definite_integral_matrix(child.domain)
 
         # Check for spherical domains
-        submesh_list = self.mesh.combine_submeshes(*symbol.domain)
+        submesh_list = self.mesh.combine_submeshes(*child.domain)
         if submesh_list[0].coord_sys == "spherical polar":
             second_dim = len(submesh_list)
             r_numpy = np.kron(np.ones(second_dim), submesh_list[0].nodes)
             r = pybamm.Vector(r_numpy)
-            out = 4 * np.pi ** 2 * integration_vector @ (discretised_symbol * r)
+            out = 4 * np.pi ** 2 * integration_vector @ (discretised_child * r)
         else:
-            out = integration_vector @ discretised_symbol
-        out.domain = []
+            out = integration_vector @ discretised_child
 
         return out
 
-    def definite_integral_vector(self, domain):
+    def definite_integral_matrix(self, domain, vector_type="row"):
         """
-        Vector for finite-volume implementation of the definite integral
+        Matrix for finite-volume implementation of the definite integral in the
+        primary dimension
 
         .. math::
             I = \\int_{a}^{b}\\!f(s)\\,ds
@@ -221,34 +229,50 @@ class FiniteVolume(pybamm.SpatialMethod):
 
         Returns
         -------
-        :class:`pybamm.Vector`
-            The finite volume integral vector for the domain
+        :class:`pybamm.Matrix`
+            The finite volume integral matrix for the domain
+        vector_type : str, optional
+            Whether to return a row or column vector in the primary dimension
+            (defualt is row)
         """
         # Create appropriate submesh by combining submeshes in domain
         submesh_list = self.mesh.combine_submeshes(*domain)
 
-        # Create vector of ones using submesh
-        vector = np.array([])
-        for submesh in submesh_list:
-            vector = np.append(vector, submesh.d_edges * np.ones_like(submesh.nodes))
+        # Create vector of ones for primary domain submesh
+        submesh = submesh_list[0]
+        vector = submesh.d_edges * np.ones_like(submesh.nodes)
 
-        return pybamm.Matrix(vector[np.newaxis, :])
+        if vector_type == "row":
+            vector = vector[np.newaxis, :]
+        elif vector_type == "column":
+            vector = vector[:, np.newaxis]
 
-    def indefinite_integral(self, domain, symbol, discretised_symbol):
+        # repeat matrix for each node in secondary dimensions
+        second_dim_len = len(submesh_list)
+        # generate full matrix from the submatrix
+        # Convert to csr_matrix so that we can take the index (row-slicing), which is
+        # not supported by the default kron format
+        # Note that this makes column-slicing inefficient, but this should not be an
+        # issue
+        matrix = csr_matrix(kron(eye(second_dim_len), vector))
+        return pybamm.Matrix(matrix)
+
+    def indefinite_integral(self, child, discretised_child):
         """Implementation of the indefinite integral operator. """
 
         # Different integral matrix depending on whether the integrand evaluates on
         # edges or nodes
-        if symbol.evaluates_on_edges():
-            integration_matrix = self.indefinite_integral_matrix_edges(domain)
+        if child.evaluates_on_edges():
+            integration_matrix = self.indefinite_integral_matrix_edges(child.domain)
         else:
-            integration_matrix = self.indefinite_integral_matrix_nodes(domain)
+            integration_matrix = self.indefinite_integral_matrix_nodes(child.domain)
 
         # Don't need to check for spherical domains as spherical polars
-        # only change the diveregence (symbols here have grad and no div)
-        out = integration_matrix @ discretised_symbol
+        # only change the diveregence (childs here have grad and no div)
+        out = integration_matrix @ discretised_child
 
-        out.domain = domain
+        out.domain = child.domain
+        out.auxiliary_domains = child.auxiliary_domains
 
         return out
 
@@ -313,6 +337,59 @@ class FiniteVolume(pybamm.SpatialMethod):
         matrix = csr_matrix(kron(eye(sec_pts), sub_matrix))
 
         return pybamm.Matrix(matrix)
+
+    def internal_neumann_condition(
+        self, left_symbol_disc, right_symbol_disc, left_mesh, right_mesh
+    ):
+        """
+        A method to find the internal neumann conditions between two symbols
+        on adjacent subdomains.
+
+        Parameters
+        ----------
+        left_symbol_disc : :class:`pybamm.Symbol`
+            The discretised symbol on the left subdomain
+        right_symbol_disc : :class:`pybamm.Symbol`
+            The discretised symbol on the right subdomain
+        left_mesh : list
+            The mesh on the left subdomain
+        right_mesh : list
+            The mesh on the right subdomain
+        """
+
+        left_npts = left_mesh[0].npts
+        right_npts = right_mesh[0].npts
+
+        sec_pts = len(left_mesh)
+
+        if sec_pts != len(right_mesh):
+            raise pybamm.DomainError(
+                """Number of secondary points in subdomains do not match"""
+            )
+
+        left_sub_matrix = np.zeros((1, left_npts))
+        left_sub_matrix[0][left_npts - 1] = 1
+        left_matrix = pybamm.Matrix(csr_matrix(kron(eye(sec_pts), left_sub_matrix)))
+
+        right_sub_matrix = np.zeros((1, right_npts))
+        right_sub_matrix[0][0] = 1
+        right_matrix = pybamm.Matrix(csr_matrix(kron(eye(sec_pts), right_sub_matrix)))
+
+        # Remove domains to avoid clash
+        left_domain = left_symbol_disc.domain
+        right_domain = right_symbol_disc.domain
+        left_symbol_disc.domain = []
+        right_symbol_disc.domain = []
+
+        # Finite volume derivative
+        dy = right_matrix @ right_symbol_disc - left_matrix @ left_symbol_disc
+        dx = right_mesh[0].nodes[0] - left_mesh[0].nodes[-1]
+
+        # Change domains back
+        left_symbol_disc.domain = left_domain
+        right_symbol_disc.domain = right_domain
+
+        return dy / dx
 
     def indefinite_integral_matrix_nodes(self, domain):
         """
@@ -405,7 +482,6 @@ class FiniteVolume(pybamm.SpatialMethod):
                 rbc_i = rbc_value
             else:
                 rbc_i = rbc_value[i]
-
             if lbc_type == "Dirichlet":
                 left_ghost_constant = 2 * lbc_i
             elif lbc_type == "Neumann":
@@ -480,7 +556,7 @@ class FiniteVolume(pybamm.SpatialMethod):
                     ([-0.5, 1.5], ([0, 0], [prim_pts - 2, prim_pts - 1])),
                     shape=(1, prim_pts),
                 )
-        elif isinstance(symbol, pybamm.BoundaryFlux):
+        elif isinstance(symbol, pybamm.BoundaryGradient):
             if symbol.side == "left":
                 dx = submesh_list[0].d_nodes[0]
                 sub_matrix = (1 / dx) * csr_matrix(
@@ -503,6 +579,7 @@ class FiniteVolume(pybamm.SpatialMethod):
         # Return boundary value with domain given by symbol
         boundary_value = pybamm.Matrix(matrix) @ discretised_child
         boundary_value.domain = symbol.domain
+        boundary_value.auxiliary_domains = symbol.auxiliary_domains
 
         return boundary_value
 
@@ -535,8 +612,11 @@ class FiniteVolume(pybamm.SpatialMethod):
 
         # inner product takes fluxes from edges to nodes
         if isinstance(bin_op, pybamm.Inner):
-            disc_left = self.edge_to_node(disc_left)
-            disc_right = self.edge_to_node(disc_right)
+            if left_evaluates_on_edges:
+                disc_left = self.edge_to_node(disc_left)
+            if right_evaluates_on_edges:
+                disc_right = self.edge_to_node(disc_right)
+
         # If neither child evaluates on edges, or both children have gradients,
         # no need to do any averaging
         elif left_evaluates_on_edges == right_evaluates_on_edges:

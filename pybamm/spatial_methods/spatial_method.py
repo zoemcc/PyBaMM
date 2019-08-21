@@ -53,7 +53,7 @@ class SpatialMethod:
         else:
             return pybamm.Vector(symbol_mesh[0].nodes, domain=symbol.domain)
 
-    def broadcast(self, symbol, domain):
+    def broadcast(self, symbol, domain, auxiliary_domains, broadcast_type):
         """
         Broadcast symbol to a specified domain.
 
@@ -63,29 +63,32 @@ class SpatialMethod:
             The symbol to be broadcasted
         domain : iterable of strings
             The domain to broadcast to
+        broadcast_type : str
+            The type of broadcast, either: 'primary' or 'full'
 
         Returns
         -------
         broadcasted_symbol: class: `pybamm.Symbol`
             The discretised symbol of the correct size for the spatial method
         """
-        vector_size_1D = sum(self.mesh[dom][0].npts_for_broadcast for dom in domain)
-        vector_size_2D = sum(
+
+        primary_pts_for_broadcast = sum(
+            self.mesh[dom][0].npts_for_broadcast for dom in domain
+        )
+
+        full_pts_for_broadcast = sum(
             subdom.npts_for_broadcast for dom in domain for subdom in self.mesh[dom]
         )
 
-        if symbol.domain == ["current collector"]:
+        if broadcast_type == "primary":
             out = pybamm.Outer(
-                symbol, pybamm.Vector(np.ones(vector_size_1D), domain=domain)
+                symbol, pybamm.Vector(np.ones(primary_pts_for_broadcast), domain=domain)
             )
-        elif symbol.domain == ["negative particle"] or symbol.domain == [
-            "positive particle"
-        ]:
-            out = pybamm.Outer(
-                symbol, pybamm.Vector(np.ones(vector_size_1D), domain=domain)
-            )
-        else:
-            out = symbol * pybamm.Vector(np.ones(vector_size_2D), domain=domain)
+            out.auxiliary_domains = auxiliary_domains
+
+        elif broadcast_type == "full":
+            out = symbol * pybamm.Vector(np.ones(full_pts_for_broadcast), domain=domain)
+
         return out
 
     def gradient(self, symbol, discretised_symbol, boundary_conditions):
@@ -155,17 +158,15 @@ class SpatialMethod:
         """
         raise NotImplementedError
 
-    def integral(self, domain, symbol, discretised_symbol):
+    def integral(self, child, discretised_child):
         """
         Implements the integral for a spatial method.
 
         Parameters
         ----------
-        domain: iterable of strings
-            The domain in which to integrate
-        symbol: :class:`pybamm.Symbol`
+        child: :class:`pybamm.Symbol`
             The symbol to which is being integrated
-        discretised_symbol: :class:`pybamm.Symbol`
+        discretised_child: :class:`pybamm.Symbol`
             The discretised symbol of the correct size
 
         Returns
@@ -176,17 +177,15 @@ class SpatialMethod:
         """
         raise NotImplementedError
 
-    def indefinite_integral(self, domain, symbol, discretised_symbol):
+    def indefinite_integral(self, child, discretised_child):
         """
         Implements the indefinite integral for a spatial method.
 
         Parameters
         ----------
-        domain: iterable of strings
-            The domain in which to integrate
-        symbol: :class:`pybamm.Symbol`
+        child: :class:`pybamm.Symbol`
             The symbol to which is being integrated
-        discretised_symbol: :class:`pybamm.Symbol`
+        discretised_child: :class:`pybamm.Symbol`
             The discretised symbol of the correct size
 
         Returns
@@ -195,6 +194,52 @@ class SpatialMethod:
             Contains the result of acting the discretised indefinite integral on
             the child discretised_symbol
         """
+        raise NotImplementedError
+
+    def boundary_integral(self, child, discretised_child, region):
+        """
+        Implements the boundary integral for a spatial method.
+
+        Parameters
+        ----------
+        child: :class:`pybamm.Symbol`
+            The symbol to which is being integrated
+        discretised_child: :class:`pybamm.Symbol`
+            The discretised symbol of the correct size
+        region: str
+            The region of the boundary over which to integrate. If region is None
+            (default) the integration is carried out over the entire boundary. If
+            region is `negative tab` or `positive tab` then the integration is only
+            carried out over the appropriate part of the boundary corresponding to
+            the tab.
+
+        Returns
+        -------
+        :class: `pybamm.Array`
+            Contains the result of acting the discretised boundary integral on
+            the child discretised_symbol
+        """
+        raise NotImplementedError
+
+    def internal_neumann_condition(
+        self, left_symbol_disc, right_symbol_disc, left_mesh, right_mesh
+    ):
+        """
+        A method to find the internal neumann conditions between two symbols
+        on adjacent subdomains.
+
+        Parameters
+        ----------
+        left_symbol_disc : :class:`pybamm.Symbol`
+            The discretised symbol on the left subdomain
+        right_symbol_disc : :class:`pybamm.Symbol`
+            The discretised symbol on the right subdomain
+        left_mesh : list
+            The mesh on the left subdomain
+        right_mesh : list
+            The mesh on the right subdomain
+        """
+
         raise NotImplementedError
 
     def boundary_value_or_flux(self, symbol, discretised_child):
@@ -218,18 +263,19 @@ class SpatialMethod:
         """
         if any(len(self.mesh[dom]) > 1 for dom in discretised_child.domain):
             raise NotImplementedError("Cannot process 2D symbol in base spatial method")
-        if isinstance(symbol, pybamm.BoundaryFlux):
-            raise TypeError("Cannot process BoundaryFlux in base spatial method")
+        if isinstance(symbol, pybamm.BoundaryGradient):
+            raise TypeError("Cannot process BoundaryGradient in base spatial method")
         n = sum(self.mesh[dom][0].npts for dom in discretised_child.domain)
         if symbol.side == "left":
             # coo_matrix takes inputs (data, (row, col)) and puts data[i] at the point
             # (row[i], col[i]) for each index of data. Here we just want a single point
             # with value 1 at (0,0).
-            left_vector = coo_matrix(([1], ([0], [0])), shape=(1, n))
+            # Convert to a csr_matrix to allow indexing and other functionality
+            left_vector = csr_matrix(coo_matrix(([1], ([0], [0])), shape=(1, n)))
             bv_vector = pybamm.Matrix(left_vector)
         elif symbol.side == "right":
             # as above, but now we want a single point with value 1 at (0, n-1)
-            right_vector = coo_matrix(([1], ([0], [n - 1])), shape=(1, n))
+            right_vector = csr_matrix(coo_matrix(([1], ([0], [n - 1])), shape=(1, n)))
             bv_vector = pybamm.Matrix(right_vector)
 
         out = bv_vector @ discretised_child

@@ -12,11 +12,10 @@ class DFN(BaseModel):
     **Extends:** :class:`pybamm.lithium_ion.BaseModel`
     """
 
-    def __init__(self, options=None):
-        super().__init__(options)
-        self.name = "Doyle-Fuller-Newman model"
+    def __init__(self, options=None, name="Doyle-Fuller-Newman model"):
+        super().__init__(options, name)
 
-        self.set_current_collector_submodel()
+        self.set_reactions()
         self.set_porosity_submodel()
         self.set_convection_submodel()
         self.set_interfacial_submodel()
@@ -24,14 +23,9 @@ class DFN(BaseModel):
         self.set_solid_submodel()
         self.set_electrolyte_submodel()
         self.set_thermal_submodel()
+        self.set_current_collector_submodel()
 
         self.build_model()
-
-    def set_current_collector_submodel(self):
-
-        self.submodels["current collector"] = pybamm.current_collector.Uniform(
-            self.param, "Negative"
-        )
 
     def set_porosity_submodel(self):
 
@@ -62,10 +56,10 @@ class DFN(BaseModel):
     def set_solid_submodel(self):
 
         self.submodels["negative electrode"] = pybamm.electrode.ohm.Full(
-            self.param, "Negative"
+            self.param, "Negative", self.reactions
         )
         self.submodels["positive electrode"] = pybamm.electrode.ohm.Full(
-            self.param, "Positive"
+            self.param, "Positive", self.reactions
         )
 
     def set_electrolyte_submodel(self):
@@ -73,13 +67,21 @@ class DFN(BaseModel):
         electrolyte = pybamm.electrolyte.stefan_maxwell
 
         self.submodels["electrolyte conductivity"] = electrolyte.conductivity.Full(
-            self.param
+            self.param, self.reactions
         )
-        self.submodels["electrolyte diffusion"] = electrolyte.diffusion.Full(self.param)
+        self.submodels["electrolyte diffusion"] = electrolyte.diffusion.Full(
+            self.param, self.reactions
+        )
 
     @property
     def default_geometry(self):
-        return pybamm.Geometry("1D macro", "1+1D micro")
+        dimensionality = self.options["dimensionality"]
+        if dimensionality == 0:
+            return pybamm.Geometry("1D macro", "1+1D micro")
+        elif dimensionality == 1:
+            return pybamm.Geometry("1+1D macro", "(1+1)+1D micro")
+        elif dimensionality == 2:
+            return pybamm.Geometry("2+1D macro", "(2+1)+1D micro")
 
     @property
     def default_solver(self):

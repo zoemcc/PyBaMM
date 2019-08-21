@@ -12,26 +12,26 @@ class TestLeadingOrder(unittest.TestCase):
         param = pybamm.standard_parameters_lead_acid
         reactions = {
             "main": {
-                "neg": {
-                    "s_plus": param.s_n,
-                    "j": "Average negative electrode interfacial current density",
+                "Negative": {
+                    "s": param.s_n,
+                    "aj": "Negative electrode interfacial current density",
                 },
-                "pos": {
-                    "s_plus": param.s_p,
-                    "j": "Average positive electrode interfacial current density",
+                "Positive": {
+                    "s": param.s_p,
+                    "aj": "Positive electrode interfacial current density",
                 },
             }
         }
         a = pybamm.Scalar(0)
         variables = {
-            "Average negative electrode porosity": a,
-            "Average separator porosity": a,
-            "Average positive electrode porosity": a,
-            "Average negative electrode porosity change": a,
-            "Average separator porosity change": a,
-            "Average positive electrode porosity change": a,
-            "Average negative electrode interfacial current density": a,
-            "Average positive electrode interfacial current density": a,
+            "X-averaged negative electrode porosity": a,
+            "X-averaged separator porosity": a,
+            "X-averaged positive electrode porosity": a,
+            "X-averaged negative electrode porosity change": a,
+            "X-averaged separator porosity change": a,
+            "X-averaged positive electrode porosity change": a,
+            "X-averaged negative electrode interfacial current density": a,
+            "X-averaged positive electrode interfacial current density": a,
         }
         submodel = pybamm.electrolyte.stefan_maxwell.diffusion.LeadingOrder(
             param, reactions

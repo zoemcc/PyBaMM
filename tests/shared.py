@@ -25,6 +25,11 @@ class SpatialMethodForTesting(pybamm.SpatialMethod):
         divergence_matrix = pybamm.Matrix(eye(n))
         return divergence_matrix @ discretised_symbol
 
+    def internal_neumann_condition(
+        self, left_symbol_disc, right_symbol_disc, left_mesh, right_mesh
+    ):
+        return pybamm.Scalar(0)
+
     def mass_matrix(self, symbol, boundary_conditions):
         n = 0
         for domain in symbol.domain:
@@ -62,7 +67,7 @@ def get_mesh_for_testing(
         "positive electrode": pybamm.Uniform1DSubMesh,
         "negative particle": pybamm.Uniform1DSubMesh,
         "positive particle": pybamm.Uniform1DSubMesh,
-        "current collector": pybamm.Uniform1DSubMesh,
+        "current collector": pybamm.SubMesh0D,
     }
     if cc_submesh:
         submesh_types["current collector"] = cc_submesh
@@ -90,9 +95,11 @@ def get_p2d_mesh_for_testing(xpts=None, rpts=10):
     return get_mesh_for_testing(xpts=xpts, rpts=rpts, geometry=geometry)
 
 
-def get_1p1d_mesh_for_testing(xpts=None, zpts=15):
+def get_1p1d_mesh_for_testing(xpts=None, zpts=15, cc_submesh=pybamm.Uniform1DSubMesh):
     geometry = pybamm.Geometry("1+1D macro")
-    return get_mesh_for_testing(xpts=xpts, zpts=zpts, geometry=geometry)
+    return get_mesh_for_testing(
+        xpts=xpts, zpts=zpts, geometry=geometry, cc_submesh=cc_submesh
+    )
 
 
 def get_2p1d_mesh_for_testing(
@@ -137,16 +144,17 @@ def get_unit_2p1D_mesh_for_testing(ypts=15, zpts=15):
     return pybamm.Mesh(geometry, submesh_types, var_pts)
 
 
-def get_discretisation_for_testing(xpts=None, rpts=10, mesh=None):
+def get_discretisation_for_testing(
+    xpts=None, rpts=10, mesh=None, cc_method=SpatialMethodForTesting
+):
     if mesh is None:
         mesh = get_mesh_for_testing(xpts=xpts, rpts=rpts)
     spatial_methods = {
         "macroscale": SpatialMethodForTesting,
         "negative particle": SpatialMethodForTesting,
         "positive particle": SpatialMethodForTesting,
-        "current collector": SpatialMethodForTesting,
+        "current collector": cc_method,
     }
-
     return pybamm.Discretisation(mesh, spatial_methods)
 
 
@@ -160,5 +168,6 @@ def get_1p1d_discretisation_for_testing(xpts=None, zpts=15):
 
 def get_2p1d_discretisation_for_testing(xpts=None, ypts=15, zpts=15):
     return get_discretisation_for_testing(
-        mesh=get_2p1d_mesh_for_testing(xpts, ypts, zpts)
+        mesh=get_2p1d_mesh_for_testing(xpts, ypts, zpts),
+        cc_method=pybamm.ScikitFiniteElement,
     )

@@ -81,10 +81,6 @@ class TestBinaryOperators(unittest.TestCase):
         self.assertEqual(outer_fun.id, outer_class.id)
 
         # failures
-        with self.assertRaisesRegex(
-            pybamm.DomainError, "left child domain must be 'current collector'"
-        ):
-            pybamm.Outer(w, v)
         y = pybamm.StateVector(slice(10))
         with self.assertRaisesRegex(
             TypeError, "right child must only contain SpatialVariable and scalars"
@@ -92,8 +88,22 @@ class TestBinaryOperators(unittest.TestCase):
             pybamm.Outer(v, y)
         with self.assertRaises(NotImplementedError):
             outer_fun.diff(None)
+
+    def test_kron(self):
+        # Kron class
+        A = pybamm.Matrix(np.eye(2))
+        b = pybamm.Vector(np.array([[4], [5]]))
+        kron = pybamm.Kron(A, b)
+        np.testing.assert_array_equal(
+            kron.evaluate().toarray(), np.kron(A.entries, b.entries)
+        )
+
+        # failures
         with self.assertRaises(NotImplementedError):
-            outer_fun.jac(None)
+            kron.diff(None)
+
+        with self.assertRaises(NotImplementedError):
+            kron.jac(None)
 
     def test_known_eval(self):
         # Scalars
@@ -155,6 +165,13 @@ class TestBinaryOperators(unittest.TestCase):
         matmul = a @ b
         with self.assertRaises(NotImplementedError):
             matmul.diff(a)
+
+        # inner
+        self.assertEqual(pybamm.inner(a, b).diff(a).evaluate(y=y), 3)
+        self.assertEqual(pybamm.inner(a, b).diff(b).evaluate(y=y), 5)
+        self.assertEqual(pybamm.inner(a, b).diff(pybamm.inner(a, b)).evaluate(y=y), 1)
+        self.assertEqual(pybamm.inner(a, a).diff(a).evaluate(y=y), 10)
+        self.assertEqual(pybamm.inner(a, a).diff(b).evaluate(y=y), 0)
 
         # division
         self.assertEqual((a / b).diff(a).evaluate(y=y), 1 / 3)
@@ -289,6 +306,13 @@ class TestBinaryOperators(unittest.TestCase):
 
         # check doesn't evaluate on edges anymore
         self.assertEqual(model.variables["inner"].evaluates_on_edges(), False)
+
+    def test_source_error(self):
+        # test error with domain not current collector
+        v = pybamm.Vector(np.ones(5), domain="current collector")
+        w = pybamm.Vector(2 * np.ones(3), domain="test")
+        with self.assertRaisesRegex(pybamm.DomainError, "finite element method"):
+            pybamm.source(v, w)
 
 
 class TestIsZero(unittest.TestCase):

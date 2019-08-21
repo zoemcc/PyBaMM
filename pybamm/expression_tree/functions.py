@@ -89,16 +89,13 @@ class Function(pybamm.Symbol):
         """ See :meth:`pybamm.Symbol._diff()`. """
         return Function(autograd.elementwise_grad(self.function), *children)
 
-    def jac(self, variable):
-        """ See :meth:`pybamm.Symbol.jac()`. """
+    def _jac(self, variable):
+        """ See :meth:`pybamm.Symbol._jac()`. """
 
         if all(child.evaluates_to_number() for child in self.children):
             # if children all evaluate to numbers the return zeros
             # of right size
-            variable_y_indices = np.arange(
-                variable.y_slice.start, variable.y_slice.stop
-            )
-            jac = csr_matrix((1, np.size(variable_y_indices)))
+            jac = csr_matrix((1, variable.evaluation_array.count(True)))
             jacobian = pybamm.Matrix(jac)
         else:
 

@@ -15,28 +15,30 @@ class LeadingOrder(BaseModel):
     ----------
     param : parameter class
         The parameters to use for this submodel
-
+    reactions : dict
+        Dictionary of reaction terms
 
     **Extends:** :class:`pybamm.electrolyte.stefan_maxwell.diffusion.BaseModel`
     """
 
     def __init__(self, param, reactions):
-        super().__init__(param)
-        self.reactions = reactions
+        super().__init__(param, reactions)
 
     def get_fundamental_variables(self):
         c_e_av = pybamm.standard_variables.c_e_av
-        c_e_n = pybamm.Broadcast(c_e_av, ["negative electrode"])
-        c_e_s = pybamm.Broadcast(c_e_av, ["separator"])
-        c_e_p = pybamm.Broadcast(c_e_av, ["positive electrode"])
+        c_e_n = pybamm.PrimaryBroadcast(c_e_av, ["negative electrode"])
+        c_e_s = pybamm.PrimaryBroadcast(c_e_av, ["separator"])
+        c_e_p = pybamm.PrimaryBroadcast(c_e_av, ["positive electrode"])
         c_e = pybamm.Concatenation(c_e_n, c_e_s, c_e_p)
 
         return self._get_standard_concentration_variables(c_e)
 
     def get_coupled_variables(self, variables):
 
-        N_e = pybamm.Broadcast(
-            0, ["negative electrode", "separator", "positive electrode"]
+        N_e = pybamm.FullBroadcast(
+            0,
+            ["negative electrode", "separator", "positive electrode"],
+            "current collector",
         )
 
         variables.update(self._get_standard_flux_variables(N_e))
@@ -47,29 +49,24 @@ class LeadingOrder(BaseModel):
 
         param = self.param
 
-        c_e_av = variables["Average electrolyte concentration"]
+        c_e_av = variables["X-averaged electrolyte concentration"]
 
-        eps_n_av = variables["Average negative electrode porosity"]
-        eps_s_av = variables["Average separator porosity"]
-        eps_p_av = variables["Average positive electrode porosity"]
+        eps_n_av = variables["X-averaged negative electrode porosity"]
+        eps_s_av = variables["X-averaged separator porosity"]
+        eps_p_av = variables["X-averaged positive electrode porosity"]
 
-        deps_n_dt_av = variables["Average negative electrode porosity change"]
-        deps_p_dt_av = variables["Average positive electrode porosity change"]
+        deps_n_dt_av = variables["X-averaged negative electrode porosity change"]
+        deps_p_dt_av = variables["X-averaged positive electrode porosity change"]
 
-        # TODO: ask tino about this bit
-        # the "j" component of reactions is now just a string referring to the variable
-        # so that the expression doesn't need to be set twice
         source_terms = sum(
-            param.l_n * rxn["neg"]["s_plus"] * variables[rxn["neg"]["j"]]
-            + param.l_p * rxn["pos"]["s_plus"] * variables[rxn["pos"]["j"]]
+            param.l_n
+            * rxn["Negative"]["s"]
+            * variables["X-averaged " + rxn["Negative"]["aj"].lower()]
+            + param.l_p
+            * rxn["Positive"]["s"]
+            * variables["X-averaged " + rxn["Positive"]["aj"].lower()]
             for rxn in self.reactions.values()
         )
-
-        # source_terms = sum(
-        #     param.l_n * rxn["neg"]["s_plus"] * rxn["neg"]["aj"]
-        #     + param.l_p * rxn["pos"]["s_plus"] * rxn["pos"]["aj"]
-        #     for rxn in self.reactions.values()
-        # )
 
         self.rhs = {
             c_e_av: 1
@@ -81,5 +78,5 @@ class LeadingOrder(BaseModel):
         }
 
     def set_initial_conditions(self, variables):
-        c_e = variables["Average electrolyte concentration"]
+        c_e = variables["X-averaged electrolyte concentration"]
         self.initial_conditions = {c_e: self.param.c_e_init}

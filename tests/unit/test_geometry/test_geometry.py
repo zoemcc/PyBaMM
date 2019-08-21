@@ -180,6 +180,7 @@ class TestGeometry(unittest.TestCase):
                     "positive electrode",
                     "negative particle",
                     "positive particle",
+                    "current collector",
                 ]
             ),
         )
@@ -212,6 +213,7 @@ class TestGeometry(unittest.TestCase):
                     "positive electrode",
                     "negative particle",
                     "positive particle",
+                    "current collector",
                 ]
             ),
         )
@@ -231,6 +233,7 @@ class TestGeometry(unittest.TestCase):
                     "positive electrode",
                     "negative particle",
                     "positive particle",
+                    "current collector",
                 ]
             ),
         )
@@ -244,9 +247,37 @@ class TestGeometry(unittest.TestCase):
                     "positive electrode",
                     "negative particle",
                     "positive particle",
+                    "current collector",
                 ]
             ),
         )
+
+
+class TestGeometry2DCurrentCollector(unittest.TestCase):
+    def test_add_custom_geometry(self):
+        geometry = pybamm.Geometry2DCurrentCollector()
+        whole_cell = ["negative electrode", "separator", "positive electrode"]
+        x = pybamm.SpatialVariable("x", whole_cell)
+        custom_geometry = {
+            "negative electrode": {
+                "primary": {x: {"min": pybamm.Scalar(1), "max": pybamm.Scalar(2)}}
+            }
+        }
+
+        geometry.update(custom_geometry)
+        self.assertEqual(
+            geometry["negative electrode"], custom_geometry["negative electrode"]
+        )
+
+    def test_geometry_keys(self):
+        geometry = pybamm.Geometry2DCurrentCollector()
+        for prim_sec_vars in geometry.values():
+            for spatial_vars in prim_sec_vars.values():
+                all(
+                    self.assertIsInstance(spatial_var, pybamm.SpatialVariable)
+                    for spatial_var in spatial_vars.keys()
+                    if spatial_var not in ["negative", "positive"]
+                )
 
 
 if __name__ == "__main__":

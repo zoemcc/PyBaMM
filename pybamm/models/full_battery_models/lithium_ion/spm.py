@@ -11,11 +11,9 @@ class SPM(BaseModel):
     **Extends:** :class:`pybamm.lithium_ion.BaseModel`
     """
 
-    def __init__(self, options=None):
-        super().__init__(options)
-        self.name = "Single particle model"
+    def __init__(self, options=None, name="Single Particle Model"):
+        super().__init__(options, name)
 
-        self.set_current_collector_submodel()
         self.set_porosity_submodel()
         self.set_convection_submodel()
         self.set_interfacial_submodel()
@@ -24,14 +22,9 @@ class SPM(BaseModel):
         self.set_electrolyte_submodel()
         self.set_positive_electrode_submodel()
         self.set_thermal_submodel()
+        self.set_current_collector_submodel()
 
         self.build_model()
-
-    def set_current_collector_submodel(self):
-
-        self.submodels["current collector"] = pybamm.current_collector.Uniform(
-            self.param, "Negative"
-        )
 
     def set_porosity_submodel(self):
 
@@ -84,11 +77,22 @@ class SPM(BaseModel):
 
     @property
     def default_geometry(self):
-        return pybamm.Geometry("1D macro", "1D micro")
+        dimensionality = self.options["dimensionality"]
+        if dimensionality == 0:
+            return pybamm.Geometry("1D macro", "1D micro")
+        elif dimensionality == 1:
+            return pybamm.Geometry("1+1D macro", "(1+0)+1D micro")
+        elif dimensionality == 2:
+            return pybamm.Geometry("2+1D macro", "(2+0)+1D micro")
 
     @property
     def default_solver(self):
         """
         Create and return the default solver for this model
         """
-        return pybamm.ScipySolver()
+        # Different solver depending on whether we solve ODEs or DAEs
+        dimensionality = self.options["dimensionality"]
+        if dimensionality == 0:
+            return pybamm.ScipySolver()
+        else:
+            return pybamm.ScikitsDaeSolver()

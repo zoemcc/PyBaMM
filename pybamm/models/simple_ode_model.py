@@ -14,8 +14,7 @@ class SimpleODEModel(pybamm.BaseBatteryModel):
     """
 
     def __init__(self):
-        super().__init__()
-        self.name = "Simple ODE Model"
+        super().__init__(None, "Simple ODE Model")
 
         whole_cell = ["negative electrode", "separator", "positive electrode"]
         # Create variables: domain is explicitly empty since these variables are only
@@ -37,8 +36,10 @@ class SimpleODEModel(pybamm.BaseBatteryModel):
         # Broadcast some of the variables
         self.variables = {
             "a": a,
-            "b broadcasted": pybamm.Broadcast(b, whole_cell),
-            "c broadcasted": pybamm.Broadcast(c, ["negative electrode", "separator"]),
+            "b broadcasted": pybamm.FullBroadcast(b, whole_cell, "current collector"),
+            "c broadcasted": pybamm.FullBroadcast(
+                c, ["negative electrode", "separator"], "current collector"
+            ),
         }
 
         "-----------------------------------------------------------------------------"

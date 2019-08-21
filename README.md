@@ -11,9 +11,11 @@ Python Battery Mathematical Modelling solves continuum models for batteries, usi
 
 ## How do I use PyBaMM?
 
-PyBaMM comes with a number of [detailed examples](examples/README.md), hosted here on
+PyBaMM comes with a number of [detailed examples](examples/notebooks/README.md), hosted here on
 github. In addition, there is a [full API documentation](http://pybamm.readthedocs.io/),
-hosted on [Read The Docs](readthedocs.io).
+hosted on [Read The Docs](readthedocs.io). A set of slides giving an overview of PyBaMM
+can be found
+[here](https://github.com/pybamm-team/pybamm_summary_slides/blob/master/pybamm.pdf).
 
 ## How can I obtain & install PyBaMM?
 

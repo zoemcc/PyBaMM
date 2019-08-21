@@ -44,6 +44,14 @@ Delta_T = pybamm.Parameter("Typical temperature variation [K]")
 rho_eff_dim = pybamm.Parameter("Lumped effective thermal density [J.K-1.m-3]")
 lambda_eff_dim = pybamm.Parameter("Effective thermal conductivity [W.m-1.K-1]")
 
+# Activation energies
+E_r_n = pybamm.Parameter("Negative reaction rate activation energy [J.mol-1]")
+E_r_p = pybamm.Parameter("Positive reaction rate activation energy [J.mol-1]")
+E_D_s_n = pybamm.Parameter("Negative solid diffusion activation energy [J.mol-1]")
+E_D_s_p = pybamm.Parameter("Positive solid diffusion activation energy [J.mol-1]")
+E_D_e = pybamm.Parameter("Electrolyte diffusion activation energy [J.mol-1]")
+E_k_e = pybamm.Parameter("Electrolyte conductivity activation energy [J.mol-1]")
+
 # Initial temperature
 T_init_dim = pybamm.Parameter("Initial temperature [K]")
 
@@ -61,9 +69,9 @@ rho_p = rho_p_dim * c_p_p_dim / rho_eff_dim
 rho_cp = rho_cp_dim * c_p_cp_dim / rho_eff_dim
 
 rho_k = pybamm.Concatenation(
-    pybamm.Broadcast(rho_n, ["negative electrode"]),
-    pybamm.Broadcast(rho_s, ["separator"]),
-    pybamm.Broadcast(rho_p, ["positive electrode"]),
+    pybamm.FullBroadcast(rho_n, ["negative electrode"], "current collector"),
+    pybamm.FullBroadcast(rho_s, ["separator"], "current collector"),
+    pybamm.FullBroadcast(rho_p, ["positive electrode"], "current collector"),
 )
 
 lambda_cn = lambda_cn_dim / lambda_eff_dim
@@ -73,9 +81,9 @@ lambda_p = lambda_p_dim / lambda_eff_dim
 lambda_cp = lambda_cp_dim / lambda_eff_dim
 
 lambda_k = pybamm.Concatenation(
-    pybamm.Broadcast(lambda_n, ["negative electrode"]),
-    pybamm.Broadcast(lambda_s, ["separator"]),
-    pybamm.Broadcast(lambda_p, ["positive electrode"]),
+    pybamm.FullBroadcast(lambda_n, ["negative electrode"], "current collector"),
+    pybamm.FullBroadcast(lambda_s, ["separator"], "current collector"),
+    pybamm.FullBroadcast(lambda_p, ["positive electrode"], "current collector"),
 )
 
 

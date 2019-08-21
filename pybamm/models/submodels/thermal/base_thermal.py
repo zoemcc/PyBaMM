@@ -22,21 +22,34 @@ class BaseModel(pybamm.BaseSubModel):
     def _get_standard_fundamental_variables(self, T):
         param = self.param
         T_n, T_s, T_p = T.orphans
-        T_av = pybamm.average(T)
+
+        T_av = pybamm.x_average(T)
 
         q = self._flux_law(T)
 
         variables = {
+            "X-averaged negative electrode temperature": pybamm.x_average(T_n),
+            "X-averaged negative electrode temperature [K]": param.Delta_T
+            * pybamm.x_average(T_n)
+            + param.T_ref,
             "Negative electrode temperature": T_n,
             "Negative electrode temperature [K]": param.Delta_T * T_n + param.T_ref,
+            "X-averaged separator temperature": pybamm.x_average(T_s),
+            "X-averaged separator temperature [K]": param.Delta_T
+            * pybamm.x_average(T_s)
+            + param.T_ref,
             "Separator temperature": T_s,
             "Separator temperature [K]": param.Delta_T * T_s + param.T_ref,
+            "X-averaged positive electrode temperature": pybamm.x_average(T_p),
+            "X-averaged positive electrode temperature [K]": param.Delta_T
+            * pybamm.x_average(T_p)
+            + param.T_ref,
             "Positive electrode temperature": T_p,
             "Positive electrode temperature [K]": param.Delta_T * T_p + param.T_ref,
             "Cell temperature": T,
             "Cell temperature [K]": param.Delta_T * T + param.T_ref,
-            "Average cell temperature": T_av,
-            "Average cell temperature [K]": param.Delta_T * T_av + param.T_ref,
+            "X-averaged cell temperature": T_av,
+            "X-averaged cell temperature [K]": param.Delta_T * T_av + param.T_ref,
             "Heat flux": q,
             "Heat flux [W.m-2]": q,
         }
@@ -59,33 +72,45 @@ class BaseModel(pybamm.BaseSubModel):
         dUdT_n = variables["Negative electrode entropic change"]
         dUdT_p = variables["Positive electrode entropic change"]
 
-        # i_e = variables["Electrolyte current density"]
-        # phi_e = variables["Electrolyte potential"]
+        i_e = variables["Electrolyte current density"]
+        phi_e = variables["Electrolyte potential"]
 
-        # phi_s_n = variables["Negative electrode potential"]
-        # phi_s_s = pybamm.Broadcast(0, ["separator"])
-        # phi_s_p = variables["Positive electrode potential"]
-        # phi_s = pybamm.Concatenation(phi_s_n, phi_s_s, phi_s_p)
+        i_s_n = variables["Negative electrode current density"]
+        i_s_p = variables["Positive electrode current density"]
+        phi_s_n = variables["Negative electrode potential"]
+        phi_s_p = variables["Positive electrode potential"]
 
-        # TODO: add ohmic heating from solid and electrolyte
-        # Q_ohm = -i_s * pybamm.grad(phi_s) - i_e * pybamm.grad(phi_e)
-        # Q_ohm = -pybamm.inner(i_e, pybamm.grad(phi_e))
-        Q_ohm = pybamm.Scalar(0)
+        Q_ohm_s_n = -pybamm.inner(i_s_n, pybamm.grad(phi_s_n))
+        Q_ohm_s_s = pybamm.FullBroadcast(0, ["separator"], "current collector")
+        Q_ohm_s_p = -pybamm.inner(i_s_p, pybamm.grad(phi_s_p))
+        Q_ohm_s = pybamm.Concatenation(Q_ohm_s_n, Q_ohm_s_s, Q_ohm_s_p)
+
+        Q_ohm_e = -pybamm.inner(i_e, pybamm.grad(phi_e))
+
+        Q_ohm = Q_ohm_s + Q_ohm_e
 
         Q_rxn_n = j_n * eta_r_n
         Q_rxn_p = j_p * eta_r_p
         Q_rxn = pybamm.Concatenation(
-            *[Q_rxn_n, pybamm.Broadcast(0, ["separator"]), Q_rxn_p]
+            *[
+                Q_rxn_n,
+                pybamm.FullBroadcast(0, ["separator"], "current collector"),
+                Q_rxn_p,
+            ]
         )
 
         Q_rev_n = j_n * (param.Theta ** (-1) + T_n) * dUdT_n
         Q_rev_p = j_p * (param.Theta ** (-1) + T_p) * dUdT_p
         Q_rev = pybamm.Concatenation(
-            *[Q_rev_n, pybamm.Broadcast(0, ["separator"]), Q_rev_p]
+            *[
+                Q_rev_n,
+                pybamm.FullBroadcast(0, ["separator"], "current collector"),
+                Q_rev_p,
+            ]
         )
 
         Q = Q_ohm + Q_rxn + Q_rev
-        Q_av = pybamm.average(Q)
+        Q_av = pybamm.x_average(Q)
 
         variables.update(
             {
@@ -109,8 +134,8 @@ class BaseModel(pybamm.BaseSubModel):
                 * param.potential_scale
                 * Q
                 / param.L_x,
-                "Average total heating": Q_av,
-                "Average total heating [A.V.m-3]": param.i_typ
+                "X-averaged total heating": Q_av,
+                "X-averaged total heating [A.V.m-3]": param.i_typ
                 * param.potential_scale
                 * Q_av
                 / param.L_x,
