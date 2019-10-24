@@ -90,8 +90,8 @@ class BaseOutputTest(object):
             self.r_p_edge = disc.mesh["positive particle"][0].edges
 
         # Useful parameters
-        self.l_n = param.process_symbol(pybamm.geometric_parameters.l_n).evaluate()
-        self.l_p = param.process_symbol(pybamm.geometric_parameters.l_p).evaluate()
+        self.l_n = param.evaluate(pybamm.geometric_parameters.l_n)
+        self.l_p = param.evaluate(pybamm.geometric_parameters.l_p)
 
         if isinstance(self.model, pybamm.lithium_ion.BaseModel):
             current_param = pybamm.standard_parameters_lithium_ion.current_with_time
@@ -309,20 +309,34 @@ class ParticleConcentrationTests(BaseOutputTest):
         """Test that no flux holds in the centre of the particle. Test that surface
         flux in the negative particles is greater than zero and that the flux in the
         positive particles is less than zero during a discharge."""
-        t, x_n, x_p, r_n, r_p = self.t, self.x_n, self.x_p, self.r_n_edge, self.r_p_edge
-
-        if self.operating_condition == "discharge":
-            np.testing.assert_array_less(0, self.N_s_n(t[1:], x_n, r_n[1:]))
-            np.testing.assert_array_less(self.N_s_p(t[1:], x_p, r_p[1:]), 0)
-        if self.operating_condition == "charge":
-            np.testing.assert_array_less(self.N_s_n(t[1:], x_n, r_n[1:]), 0)
-            np.testing.assert_array_less(0, self.N_s_p(t[1:], x_p, r_p[1:]))
-        if self.operating_condition == "off":
+        # At the moment the zero flux is Broadcasted onto cell centres, not edges
+        # in the case of fast diffusion. This should be fixed by allowing Broadcasting
+        # to edges. For now, evaluate on r nodes for "fast diffusion" in particles
+        if self.model.options["particle"] == "fast diffusion":
+            t, x_n, x_p, r_n, r_p = self.t, self.x_n, self.x_p, self.r_n, self.r_p
             np.testing.assert_array_almost_equal(self.N_s_n(t, x_n, r_n), 0)
             np.testing.assert_array_almost_equal(self.N_s_p(t, x_p, r_p), 0)
+        else:
+            t, x_n, x_p, r_n, r_p = (
+                self.t,
+                self.x_n,
+                self.x_p,
+                self.r_n_edge,
+                self.r_p_edge,
+            )
 
-        np.testing.assert_array_equal(0, self.N_s_n(t, x_n, r_n[0]))
-        np.testing.assert_array_equal(0, self.N_s_p(t, x_p, r_p[0]))
+            if self.operating_condition == "discharge":
+                np.testing.assert_array_less(0, self.N_s_n(t[1:], x_n, r_n[1:]))
+                np.testing.assert_array_less(self.N_s_p(t[1:], x_p, r_p[1:]), 0)
+            if self.operating_condition == "charge":
+                np.testing.assert_array_less(self.N_s_n(t[1:], x_n, r_n[1:]), 0)
+                np.testing.assert_array_less(0, self.N_s_p(t[1:], x_p, r_p[1:]))
+            if self.operating_condition == "off":
+                np.testing.assert_array_almost_equal(self.N_s_n(t, x_n, r_n), 0)
+                np.testing.assert_array_almost_equal(self.N_s_p(t, x_p, r_p), 0)
+
+            np.testing.assert_array_equal(0, self.N_s_n(t, x_n, r_n[0]))
+            np.testing.assert_array_equal(0, self.N_s_p(t, x_p, r_p[0]))
 
     def test_all(self):
         self.test_concentration_increase_decrease()
@@ -621,9 +635,9 @@ class VelocityTests(BaseOutputTest):
         t, x_n, x_p = self.t, self.x_n, self.x_p
 
         beta_n = pybamm.standard_parameters_lead_acid.beta_n
-        beta_n = self.param.process_symbol(beta_n).evaluate()
+        beta_n = self.param.evaluate(beta_n)
         beta_p = pybamm.standard_parameters_lead_acid.beta_p
-        beta_p = self.param.process_symbol(beta_p).evaluate()
+        beta_p = self.param.evaluate(beta_p)
 
         np.testing.assert_array_almost_equal(
             self.v_box(t, x_n), beta_n * self.i_e(t, x_n)

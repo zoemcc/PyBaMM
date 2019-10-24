@@ -17,10 +17,10 @@ class TestGeometricParameters(unittest.TestCase):
         l_p = pybamm.geometric_parameters.l_p
 
         parameter_values = pybamm.ParameterValues(
-            base_parameters={
-                "Negative electrode width [m]": 0.05,
-                "Separator width [m]": 0.02,
-                "Positive electrode width [m]": 0.21,
+            values={
+                "Negative electrode thickness [m]": 0.05,
+                "Separator thickness [m]": 0.02,
+                "Positive electrode thickness [m]": 0.21,
             }
         )
         L_n_eval = parameter_values.process_symbol(L_n)
