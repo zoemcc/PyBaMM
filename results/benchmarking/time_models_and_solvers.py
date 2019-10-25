@@ -60,8 +60,9 @@ def print_all_times_to_readme(li_ion_times, lead_acid_times):
     with open(filename, "w") as f:
         f.write("# Benchmarking\n\n")
         f.write(
-            "Comparison of solvers (time-steppers) for different models with varying"
-            + " mesh sizes\n\n"
+            "Comparison of solvers (integrators) for different models with varying"
+            + " mesh sizes. In all cases, each subdomain has the same number of"
+            + " grid points.\n\n"
         )
         f.write("## Lithium-ion models\n\n")
         for model, times in li_ion_times.items():
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     li_ion_models = {pybamm.lithium_ion.SPM(): [100, 200, 400]}
     lead_acid_models = {
         pybamm.lead_acid.LOQS(): [1000, 2000, 4000],
-        pybamm.lead_acid.NewmanTiedemann(): [10, 20, 40],
+        # pybamm.lead_acid.Full(): [10, 20, 40],
     }
     solvers = [
         pybamm.ScipySolver(),
