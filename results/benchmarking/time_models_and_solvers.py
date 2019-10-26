@@ -66,11 +66,13 @@ def print_all_times_to_readme(li_ion_times, lead_acid_times):
         )
         f.write("## Lithium-ion models\n\n")
         for model, times in li_ion_times.items():
+            print("Solving {}".format(model.name))
             f.write("### {}\n\n".format(model.name))
             table = model_times_to_markdown_table(times)
             f.write(table)
         f.write("## Lead-acid models\n\n")
         for model, times in lead_acid_times.items():
+            print("Solving {}".format(model.name))
             f.write("### {}\n\n".format(model.name))
             table = model_times_to_markdown_table(times)
             f.write(table)

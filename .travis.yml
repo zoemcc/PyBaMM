@@ -166,11 +166,8 @@ matrix:
             - PYBAMM_UNIT=true
             - PYBAMM_EXAMPLES=true
             - PYBAMM_SCIKITS_ODES=true
-<<<<<<< HEAD
             - PYBAMM_BENCHMARK=true
-=======
             - PYBAMM_KLU=true
->>>>>>> master
           if: type == cron
 
 # Install graphviz for macs
