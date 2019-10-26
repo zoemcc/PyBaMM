@@ -14,7 +14,7 @@ import unittest
 import subprocess
 
 
-def run_code_tests(executable=False, folder: str = "unit"):
+def run_code_tests(executable=False, folder="unit"):
     """
     Runs tests, exits if they don't finish.
     Parameters
