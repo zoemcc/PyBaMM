@@ -80,15 +80,22 @@ def print_all_times_to_readme(li_ion_times, lead_acid_times):
 
 if __name__ == "__main__":
     # pybamm.set_logging_level("DEBUG")
-    li_ion_models = {pybamm.lithium_ion.SPM(): [100, 200, 400]}
+    li_ion_models = {
+        pybamm.lithium_ion.SPM(): [100, 200, 400],
+        pybamm.lithium_ion.SPMe(): [100, 200, 400],
+        pybamm.lithium_ion.DFN(): [10, 20, 40],
+    }
     lead_acid_models = {
         pybamm.lead_acid.LOQS(): [1000, 2000, 4000],
-        # pybamm.lead_acid.Full(): [10, 20, 40],
+        pybamm.lead_acid.FOQS(): [1000, 2000, 4000],
+        pybamm.lead_acid.Composite(): [100, 200, 400],
+        pybamm.lead_acid.Full(): [10, 20, 40],
     }
     solvers = [
         pybamm.ScipySolver(),
         pybamm.ScikitsOdeSolver(),
         pybamm.ScikitsDaeSolver(),
+        pybamm.IDAKLUSolver(),
     ]
 
     li_ion_times = {

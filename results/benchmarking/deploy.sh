@@ -7,7 +7,7 @@
 git clone https://github.com/pybamm-team/pybamm-outputs.git
 # Generate results
 python3 results/benchmarking/time_models_and_solvers.py
-mv -f results/benchmarking/README.md pybamm-outputs
+mv -f results/benchmarking/README.md pybamm-outputs/benchmarking.md
 # Set up git
 cd pybamm-outputs
 git remote
@@ -18,7 +18,7 @@ dateAndMonth=`date "+%F"`
 # Stage the modified files in results 
 git add README.md
 # Create a new commit with a custom build message
-git commit -m "Travis benchmarking ($dateAndMonth)"
+git commit -m "Travis-generated results ($dateAndMonth)"
 git remote rm origin
 # Add new "origin" with access token in the git URL for authentication
 git remote add origin https://${GITHUB_TOKEN}@github.com/pybamm-team/pybamm-outputs.git > /dev/null 2>&1
