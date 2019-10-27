@@ -95,7 +95,7 @@ if __name__ == "__main__":
         pybamm.ScipySolver(),
         pybamm.ScikitsOdeSolver(),
         pybamm.ScikitsDaeSolver(),
-        pybamm.IDAKLUSolver(),
+        pybamm.IDAKLU(),
     ]
 
     li_ion_times = {
