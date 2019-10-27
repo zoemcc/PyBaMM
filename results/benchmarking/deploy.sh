@@ -16,7 +16,7 @@ git remote
 # Current month and year, 2018-04-10
 dateAndMonth=`date "+%F"`
 # Stage the modified files in results 
-git add README.md
+git add benchmarking.md
 # Create a new commit with a custom build message
 git commit -m "Travis-generated results ($dateAndMonth)"
 git remote rm origin
