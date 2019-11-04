@@ -25,6 +25,7 @@ class AlgebraicSolver(object):
         self.name = "Algebraic"
         self.method = method
         self.tol = tol
+        self.name = "Algebraic solver ({})".format(method)
 
     @property
     def method(self):
@@ -52,7 +53,7 @@ class AlgebraicSolver(object):
             equations.
 
         """
-        pybamm.logger.info("Start solving {}".format(model.name))
+        pybamm.logger.info("Start solving {} with {}".format(model.name, self.name))
 
         # Set up
         timer = pybamm.Timer()
@@ -88,7 +89,6 @@ class AlgebraicSolver(object):
 
         # Assign times
         solution.solve_time = timer.time() - solve_start_time
-        solution.total_time = timer.time() - start_time
         solution.set_up_time = set_up_time
 
         pybamm.logger.info("Finish solving {}".format(model.name))
@@ -205,14 +205,14 @@ class AlgebraicSolver(object):
                 pybamm.logger.info("Simplifying jacobian")
                 jac = simp.simplify(jac)
 
-            if model.use_to_python:
+            if model.convert_to_format == "python":
                 pybamm.logger.info("Converting jacobian to python")
                 jac = pybamm.EvaluatorPython(jac)
 
         else:
             jac = None
 
-        if model.use_to_python:
+        if model.convert_to_format == "python":
             pybamm.logger.info("Converting algebraic to python")
             concatenated_algebraic = pybamm.EvaluatorPython(concatenated_algebraic)
 
