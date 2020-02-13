@@ -62,6 +62,7 @@ Phi_dim = pybamm.Scalar(1)  # typical scale for voltage drop across cell (order 
 Delta_T = (
     pybamm.electrical_parameters.i_typ * Phi_dim / h_dim
 )  # computed from balance of typical cross-cell Ohmic heating with surface heat loss
+Delta_T = pybamm.Scalar(1)
 
 # Activation energies
 E_r_n = pybamm.Parameter("Negative reaction rate activation energy [J.mol-1]")
