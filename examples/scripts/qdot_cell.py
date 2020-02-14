@@ -6,12 +6,12 @@ pb.set_logging_level("INFO")
 
 load = False
 
-c_rate = 5
+c_rate = 1
 filename = "qdot_" + str(c_rate) + "C.p"
 
 options = {
-    "current collector": "potential pair",
-    "dimensionality": 2,
+    # "current collector": "potential pair",
+    # "dimensionality": 2,
     "thermal": "x-lumped",
 }
 model = pb.lithium_ion.DFN(options)
@@ -36,7 +36,8 @@ kim_set = {
     "Positive tab centre z-coordinate [m]": 0.2,
     "Upper voltage cut-off [V]": 4.5,
     "Lower voltage cut-off [V]": 2.5,
-    "Heat transfer coefficient [W.m-2.K-1]": 0.260,
+    "Heat transfer coefficient [W.m-2.K-1]": 0,  # 0.260,
+    "Cation transference number": 0.5,  # makes no difference to heat gen
 }
 # for heat transfer lump cooling on 1 side of battery across 48 layers.
 # So h = 25 / 2 / 48
@@ -58,6 +59,9 @@ qdot_set = {
 
 parameter_values.update(kim_set)
 
+parameter_values = model.default_parameter_values
+parameter_values.update({"Heat transfer coefficient [W.m-2.K-1]": 0})
+
 var = pb.standard_spatial_vars
 var_pts = {
     var.x_n: 5,
@@ -69,7 +73,7 @@ var_pts = {
     var.z: 5,
 }
 
-solver = pb.CasadiSolver(mode="fast")
+solver = pb.CasadiSolver(mode="safe")
 
 if load is True:
     sim = pb.load(filename)
@@ -84,7 +88,8 @@ elif load is False:
     if c_rate == 1:
         t_eval = np.linspace(0, 0.32, 100)
     elif c_rate == 5:
-        t_eval = np.linspace(0, 0.05, 100)
+        t_eval = np.linspace(0, 0.048, 100)
+        # t_eval = np.linspace(0, 0.04, 100)
     # t_eval = np.linspace(0, 0.02, 100)
     sim.solve(t_eval=t_eval)
     sim.save(filename)
@@ -99,6 +104,7 @@ plot_variables = [
     "X-averaged cell temperature [K]",
     "Volume-averaged cell temperature [K]",
     "Volume-averaged total heating [W.m-3]",
+    "Current collector current density [A.m-2]",
 ]
 
 built_model = sim.built_model
@@ -125,6 +131,8 @@ x_p = np.linspace(0, l_p, 100)
 
 y = np.linspace(0, l_y, 20)
 z = np.linspace(0, l_z, 20)
+
+sim.plot(["X-averaged positive particle concentration"])
 
 processed_variables = {}
 for var in plot_variables:
@@ -186,8 +194,39 @@ plt.xlabel("Time [h]")
 plt.ylabel("Total heat generation [W]")
 plt.show()
 
-# plot negative particle surface concentation
+#  current collector current density
 times = [t[0], t[-1] / 3, t[-1] / 2, 2 * t[-1] / 3, t[-1]]
+fig, axes = plt.subplots(1, len(times))
+for i, time in enumerate(times):
+
+    im = axes[i].pcolormesh(
+        y,
+        z,
+        processed_variables["Current collector current density [A.m-2]"](
+            time, y=y, z=z
+        ).transpose(),
+        shading="gouraud",
+        cmap="plasma",
+    )
+
+    current_time = processed_variables["Time [h]"](time)
+    rounded_time = round(float(current_time), 2)
+    axes[i].set_xlabel(r"$y$")
+    axes[i].set_ylabel(r"$z$")
+    axes[i].set_title(str(rounded_time) + " hours")
+
+    plt.colorbar(
+        im,
+        ax=axes[i],
+        # format=ticker.FuncFormatter(fmt),
+        orientation="horizontal",
+        # pad=0.2,
+        # format=sfmt,
+    )
+
+plt.show()
+
+# plot negative particle surface concentation
 fig, axes = plt.subplots(1, len(times))
 for i, time in enumerate(times):
 
