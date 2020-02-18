@@ -6,7 +6,7 @@ pb.set_logging_level("INFO")
 
 load = False
 
-c_rate = 1
+c_rate = 5
 filename = "qdot_" + str(c_rate) + "C.p"
 
 options = {
@@ -18,6 +18,7 @@ model = pb.lithium_ion.DFN(options)
 
 chemistry = pb.parameter_sets.NCA_Kim2011
 parameter_values = pb.ParameterValues(chemistry=chemistry)
+
 
 number_of_layer = 48
 # 5 C rate is 100A per cell and 75A/m^2 per layer. So is 2.1 A per layer. 100 / 2.1 = 48 layers
@@ -59,8 +60,8 @@ qdot_set = {
 
 parameter_values.update(kim_set)
 
-parameter_values = model.default_parameter_values
-parameter_values.update({"Heat transfer coefficient [W.m-2.K-1]": 0})
+# parameter_values = model.default_parameter_values
+# parameter_values.update({"Heat transfer coefficient [W.m-2.K-1]": 0})
 
 var = pb.standard_spatial_vars
 var_pts = {
@@ -86,9 +87,9 @@ elif load is False:
         C_rate=c_rate,
     )
     if c_rate == 1:
-        t_eval = np.linspace(0, 0.32, 100)
+        t_eval = np.linspace(0, 0.318, 100)
     elif c_rate == 5:
-        t_eval = np.linspace(0, 0.048, 100)
+        t_eval = np.linspace(0, 0.062, 100)
         # t_eval = np.linspace(0, 0.04, 100)
     # t_eval = np.linspace(0, 0.02, 100)
     sim.solve(t_eval=t_eval)
@@ -105,7 +106,12 @@ plot_variables = [
     "Volume-averaged cell temperature [K]",
     "Volume-averaged total heating [W.m-3]",
     "Current collector current density [A.m-2]",
+    "Volume-averaged Ohmic heating [W.m-3]",
+    "Volume-averaged irreversible electrochemical heating [W.m-3]",
+    "Volume-averaged reversible heating [W.m-3]",
 ]
+
+sim.plot()
 
 built_model = sim.built_model
 variables = built_model.variables
@@ -132,7 +138,7 @@ x_p = np.linspace(0, l_p, 100)
 y = np.linspace(0, l_y, 20)
 z = np.linspace(0, l_z, 20)
 
-sim.plot(["X-averaged positive particle concentration"])
+# sim.plot(["X-averaged positive particle concentration"])
 
 processed_variables = {}
 for var in plot_variables:
@@ -179,6 +185,14 @@ plt.ylabel("Volume-averaged cell temperature [C]")
 plt.show()
 
 plt.plot(
+    processed_variables["Discharge capacity [A.h]"](t) * 48,
+    processed_variables["Volume-averaged cell temperature [K]"](t) - 273.15,
+)
+plt.xlabel("Discharge capacity [A.h] (48 layers)")
+plt.ylabel("Volume-averaged cell temperature [C]")
+plt.show()
+
+plt.plot(
     processed_variables["Time [h]"](t),
     processed_variables["Volume-averaged total heating [W.m-3]"](t),
 )
@@ -188,9 +202,43 @@ plt.show()
 
 plt.plot(
     processed_variables["Time [h]"](t),
+    processed_variables["Volume-averaged Ohmic heating [W.m-3]"](t),
+)
+plt.xlabel("Time [h]")
+plt.ylabel("Volume-averaged Ohmic heating [W.m-3]")
+plt.show()
+
+plt.plot(
+    processed_variables["Time [h]"](t),
+    processed_variables["Volume-averaged irreversible electrochemical heating [W.m-3]"](
+        t
+    ),
+)
+plt.xlabel("Time [h]")
+plt.ylabel("Volume-averaged irreversible electrochemical heating [W.m-3]")
+plt.show()
+
+plt.plot(
+    processed_variables["Time [h]"](t),
+    processed_variables["Volume-averaged reversible heating [W.m-3]"](t),
+)
+plt.xlabel("Time [h]")
+plt.ylabel("Volume-averaged reversible heating [W.m-3]")
+plt.show()
+
+plt.plot(
+    processed_variables["Time [h]"](t),
     processed_variables["Volume-averaged total heating [W.m-3]"](t) * cell_volume,
 )
 plt.xlabel("Time [h]")
+plt.ylabel("Total heat generation [W]")
+plt.show()
+
+plt.plot(
+    processed_variables["Discharge capacity [A.h]"](t) * 48,
+    processed_variables["Volume-averaged total heating [W.m-3]"](t) * cell_volume,
+)
+plt.xlabel("Discharge capacity [A.h] (48 layers)")
 plt.ylabel("Total heat generation [W]")
 plt.show()
 
