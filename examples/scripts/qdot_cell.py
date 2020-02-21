@@ -10,8 +10,8 @@ c_rate = 5
 filename = "qdot_" + str(c_rate) + "C.p"
 
 options = {
-    # "current collector": "potential pair",
-    # "dimensionality": 2,
+    "current collector": "potential pair",
+    "dimensionality": 2,
     "thermal": "x-lumped",
 }
 model = pb.lithium_ion.DFN(options)
