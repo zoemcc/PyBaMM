@@ -83,7 +83,7 @@ class Simulation:
         var_pts=None,
         spatial_methods=None,
         solver=None,
-        quick_plot_vars=None,
+        output_variables=None,
         C_rate=None,
     ):
         self._parameter_values = parameter_values or model.default_parameter_values
@@ -484,6 +484,38 @@ class Simulation:
             save=save,
         )
 
+    def interactive(self, inputs, output_variables=None, testing=False, **kwargs):
+        """
+        Create an interactive simulation and plot.
+        This creates a :class:`pybamm.InteractivePlot` object.
+        """
+        # Convert string to list
+        if isinstance(inputs, str):
+            inputs = [inputs]
+        # Set the specified inputs, while saving initial inputs to initialize the
+        # interactive plot
+        initial_inputs = {}
+        for inp in inputs:
+            initial_inputs[inp] = self.parameter_values[inp]
+            self.parameter_values[inp] = "[input]"
+
+        # Solve with initial inputs
+        self.solve(inputs=initial_inputs, **kwargs)
+
+        # Call an interactive plot
+        plot = pybamm.InteractivePlot(self, initial_inputs, output_variables)
+
+        # Plot
+        if isnotebook():  # pragma: no cover
+            import ipywidgets as widgets
+
+            widgets.interact(
+                plot.plot,
+                t=widgets.FloatSlider(min=0, max=plot.max_t, step=0.05, value=0),
+            )
+        else:  # pragma: no cover
+            plot.dynamic_plot(testing=testing)
+
     def get_variable_array(self, *variables):
         """
         A helper function to easily obtain a dictionary of arrays of values
@@ -513,9 +545,10 @@ class Simulation:
         else:
             return tuple(variable_arrays)
 
-    def plot(self, quick_plot_vars=None, testing=False):
+    def plot(self, output_variables=None, testing=False):
         """
         A method to quickly plot the outputs of the simulation.
+        This creates a :class:`pybamm.QuickPlot` object.
 
         Parameters
         ----------
@@ -530,19 +563,19 @@ class Simulation:
                 "Model has not been solved, please solve the model before plotting."
             )
 
-        if quick_plot_vars is None:
-            quick_plot_vars = self.quick_plot_vars
+        if output_variables is None:
+            output_variables = self.quick_plot_vars
 
-        plot = pybamm.QuickPlot(self._solution, output_variables=quick_plot_vars)
+        plot = pybamm.QuickPlot(self._solution, output_variables=output_variables)
 
-        if isnotebook():
+        if isnotebook():  # pragma: no cover
             import ipywidgets as widgets
 
             widgets.interact(
                 plot.plot,
                 t=widgets.FloatSlider(min=0, max=plot.max_t, step=0.05, value=0),
             )
-        else:
+        else:  # pragma: no cover
             plot.dynamic_plot(testing=testing)
 
     @property
@@ -629,7 +662,7 @@ class Simulation:
         var_pts=None,
         spatial_methods=None,
         solver=None,
-        quick_plot_vars=None,
+        output_variables=None,
         C_rate=None,
     ):
         """

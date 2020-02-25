@@ -164,7 +164,7 @@ class TestSimulation(unittest.TestCase):
             model_options=model_options,
             submesh_types=submesh_types,
             solver=solver,
-            quick_plot_vars=quick_plot_vars,
+            output_variables=quick_plot_vars,
         )
 
         sim.set_defaults()
@@ -319,7 +319,7 @@ class TestSimulation(unittest.TestCase):
             var_pts=1,
             spatial_methods=1,
             solver=1,
-            quick_plot_vars=1,
+            output_variables=1,
         )
 
         # reset and check

@@ -41,7 +41,11 @@ class QuickPlot(object):
     """
     Generates a quick plot of a subset of key outputs of the model so that the model
     outputs can be easily assessed. The axis limits can be set using:
+        
+    .. code-block:: python
+
         self.axis["Variable name"] = [x_min, x_max, y_min, y_max]
+    
     They can be reset to the default values by using self.reset_axis.
 
     Parameters
@@ -353,8 +357,8 @@ class QuickPlot(object):
                     fontsize=8,
                     loc="lower center",
                 )
-            if k == len(self.variables) - 1:
-                ax.legend(self.labels, loc="upper right", bbox_to_anchor=(1, -0.2))
+        # Legend for models
+        self.fig.legend(self.labels, loc="lower right")
 
     def dynamic_plot(self, testing=False):
         """

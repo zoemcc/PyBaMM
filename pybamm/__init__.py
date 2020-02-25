@@ -258,7 +258,8 @@ from . import experiments
 # other
 #
 from .processed_variable import ProcessedVariable
-from .quick_plot import QuickPlot, ax_min, ax_max
+from .plotting.quick_plot import QuickPlot, ax_min, ax_max
+from .plotting.interactive_plot import InteractivePlot
 
 from .simulation import Simulation, load_sim
 
