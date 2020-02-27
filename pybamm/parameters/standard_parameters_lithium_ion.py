@@ -213,10 +213,12 @@ def U_p_dimensional(sto, T):
 
 
 # can maybe improve ref value at some stage
-U_n_ref = U_n_dimensional(pybamm.Scalar(0.2), T_ref)
+sto_n_init = c_n_init_dimensional(0) / c_n_max
+U_n_ref = U_n_dimensional(sto_n_init, T_ref)
 
 # can maybe improve ref value at some stage
-U_p_ref = U_p_dimensional(pybamm.Scalar(0.7), T_ref)
+sto_p_init = c_p_init_dimensional(1) / c_p_max
+U_p_ref = U_p_dimensional(sto_p_init, T_ref)
 
 m_n_ref_dimensional = m_n_dimensional(T_ref)
 m_p_ref_dimensional = m_p_dimensional(T_ref)
@@ -226,7 +228,7 @@ m_p_ref_dimensional = m_p_dimensional(T_ref)
 # concentration
 electrolyte_concentration_scale = c_e_typ
 negative_particle_concentration_scale = c_n_max
-positive_particle_concentration_scale = c_n_max
+positive_particle_concentration_scale = c_p_max
 
 # electrical
 potential_scale = R * T_ref / F

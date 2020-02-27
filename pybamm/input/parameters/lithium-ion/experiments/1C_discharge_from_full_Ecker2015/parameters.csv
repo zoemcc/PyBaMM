@@ -1,0 +1,19 @@
+Name [units],Value,Reference,Notes
+# Empty rows and rows starting with ‘#’ will be ignored,,,
+,,,
+# Temperature
+Reference temperature [K],296.15,23C,
+Heat transfer coefficient [W.m-2.K-1],1, dummy value,
+,,,
+# Electrical
+Number of electrodes connected in parallel to make a cell,1,,
+Number of cells connected in series to make a battery,1,,
+Lower voltage cut-off [V],3,,
+Upper voltage cut-off [V],4.5,,
+C-rate,1,,
+,,,
+# Initial conditions
+Initial concentration in negative electrode [mol.m-3], 26469.2,  22614.5 (util-C_SEI)cpmax,
+Initial concentration in positive electrode [mol.m-3], 12630.8,(1-util)cpmax,
+Initial concentration in electrolyte [mol.m-3],1000,,
+Initial temperature [K],298.15,,

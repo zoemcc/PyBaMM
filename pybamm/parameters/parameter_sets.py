@@ -42,6 +42,17 @@ Chen2020 = {
     "experiment": "1C_discharge_from_full_Chen2020",
     "citation": "Chen2020",
 }
+
+Ecker2015 = {
+    "chemistry": "lithium-ion",
+    "cell": "kokam_Ecker2015",
+    "anode": "graphite_Ecker2015",
+    "separator": "separator_Ecker2015",
+    "cathode": "LiNiCoO2_Ecker2015",
+    "electrolyte": "lipf6_Ecker2015",
+    "experiment": "1C_discharge_from_full_Ecker2015",
+}
+
 #
 # Lead-acid
 #
