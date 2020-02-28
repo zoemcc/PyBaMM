@@ -29,10 +29,8 @@ var_pts = {
     var.x_n: int(parameter_values.evaluate(pybamm.geometric_parameters.L_n / 1e-6)),
     var.x_s: int(parameter_values.evaluate(pybamm.geometric_parameters.L_s / 1e-6)),
     var.x_p: int(parameter_values.evaluate(pybamm.geometric_parameters.L_p / 1e-6)),
-    # var.r_n: int(parameter_values.evaluate(pybamm.geometric_parameters.R_n / 1e-7)),
-    # var.r_p: int(parameter_values.evaluate(pybamm.geometric_parameters.R_p / 1e-7)),
-    var.r_n: 250,  # extra fine just to be sure
-    var.r_p: 250,  # extra fin just to be sure
+    var.r_n: int(parameter_values.evaluate(pybamm.geometric_parameters.R_n / 1e-7)),
+    var.r_p: int(parameter_values.evaluate(pybamm.geometric_parameters.R_p / 1e-7)),
 }
 
 # set up simulations
