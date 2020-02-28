@@ -16,6 +16,9 @@ def graphite_ocp_Ecker2015_function(sto):
        ----------
        .. [1] http://www.cchem.berkeley.edu/jsngrp/fortran.html
        """
+
+    # Graphite Anode from Ecker, Kabitz, Laresgoiti et al.
+    # Analytical fit (WebPlotDigitizer + gnuplot)
     a = 0.716502
     b = 369.028
     c = 0.12193

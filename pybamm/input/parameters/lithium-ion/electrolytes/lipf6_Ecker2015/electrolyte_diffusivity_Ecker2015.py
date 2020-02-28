@@ -34,18 +34,24 @@ l
         Solid diffusivity
     """
 
+    # Depends on electrolyte conductivity. Have just hard coded in now for
+    # convinience, but should be able to call the conductivity directly
+
+    # mol/m^3 to mol/l
     cm = 1e-3 * c_e
 
-    sigma_e = 0.2667 * cm ** 3 - 1.2983 * cm ** 2 + 1.7919 * cm + 0.1726
+    # value at T = 296K
+    sigma_e_296 = 0.2667 * cm ** 3 - 1.2983 * cm ** 2 + 1.7919 * cm + 0.1726
 
-    C = T_inf * exp(17100 / R_g * (1 / T_inf))
+    # add temperature dependence
+    C = 296 * exp(E_D_e / (R_g * 296))
+    sigma_e = C * sigma_e_296 * exp(-E_D_e / (R_g * T)) / T
 
-    sigma = C * sigma_e * exp(-17100 / R_g * (1 / T)) / T
-
+    # constants
     k_b = 1.38 * 1e-23
     F = 96487
     q_e = 1.602 * 1e-19
 
-    D_c_e = k_b / (F * q_e) * sigma * T / c_e
+    D_c_e = (k_b / (F * q_e)) * sigma_e * T / c_e
 
     return D_c_e

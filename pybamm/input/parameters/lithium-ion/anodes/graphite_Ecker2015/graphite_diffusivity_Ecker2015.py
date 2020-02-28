@@ -35,6 +35,6 @@ def graphite_diffusivity_Ecker2015(sto, T, T_inf, E_D_s, R_g):
 
     # D_ref = FunctionParameter("Measured negative electrode diffusivity [m2.s-1]", sto)
     D_ref = 8.4e-13 * exp(-11.3 * sto) + 8.2e-15
-    arrhenius = exp(E_D_s / R_g * (1 / T_inf - 1 / T))
+    arrhenius = exp(-E_D_s / (R_g * T)) * exp(E_D_s / (R_g * 296))
 
     return D_ref * arrhenius

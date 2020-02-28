@@ -20,6 +20,9 @@ def nco_ocp_Ecker2015_function(sto):
        Stochiometry of material (li-fraction)
 
     """
+
+    # LiNiCo from Ecker, Kabitz, Laresgoiti et al.
+    # Analytical fit (WebPlotDigitizer + gnuplot)
     a = -2.35211
     c = 0.0747061
     d = 31.886

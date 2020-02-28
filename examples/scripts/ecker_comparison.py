@@ -1,16 +1,49 @@
-import pybamm as pb
+import pybamm as pybamm
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# pb.set_logging_level("INFO")
+# pybamm.set_logging_level("INFO")
 # load data
 voltage_data_1C = pd.read_csv("ddliion/voltage_1C.dat", sep="\t")
 voltage_data_2_5C = pd.read_csv("ddliion/voltage_2_5C.dat", sep="\t")
 voltage_data_5C = pd.read_csv("ddliion/voltage_5C.dat", sep="\t")
 voltage_data_7_5C = pd.read_csv("ddliion/voltage_7_5C.dat", sep="\t")
 
-# loop over C_rates
+# set up models
+models = {
+    "SPM": pybamm.lithium_ion.SPM(),
+    "SPMe": pybamm.lithium_ion.SPMe(),
+    "DFN": pybamm.lithium_ion.DFN(),
+}
+
+# pick parameters, keeping C-rate as an input to be changed for each solve
+chemistry = pybamm.parameter_sets.Ecker2015
+parameter_values = pybamm.ParameterValues(chemistry=chemistry)
+parameter_values.update({"C-rate": "[input]"})
+
+# set up number of points for discretisation
+var = pybamm.standard_spatial_vars
+# var_pts = {var.x_n: 101, var.x_s: 101, var.x_p: 101, var.r_n: 101, var.r_p: 101}
+var_pts = {
+    var.x_n: int(parameter_values.evaluate(pybamm.geometric_parameters.L_n / 1e-6)),
+    var.x_s: int(parameter_values.evaluate(pybamm.geometric_parameters.L_s / 1e-6)),
+    var.x_p: int(parameter_values.evaluate(pybamm.geometric_parameters.L_p / 1e-6)),
+    # var.r_n: int(parameter_values.evaluate(pybamm.geometric_parameters.R_n / 1e-7)),
+    # var.r_p: int(parameter_values.evaluate(pybamm.geometric_parameters.R_p / 1e-7)),
+    var.r_n: 250,
+    var.r_p: 250,
+}
+
+# set up simulations
+sims = {}
+for name, model in models.items():
+    sims[name] = pybamm.Simulation(
+        model, parameter_values=parameter_values, var_pts=var_pts
+    )
+
+# pick C_rates and times to integrate over (using casasi fast mode, so want to
+# stop before e.g. surface concentration goes negative)
 C_rates = [1, 2.5, 5, 7.5]
 t_evals = [
     np.linspace(0, 3830, 1000),
@@ -24,58 +57,27 @@ t_evals = [
 #    np.array(voltage_data_5C["t(s)"]),
 #    np.array(voltage_data_7_5C["t(s)"]),
 # ]
-solutions = {"SPM": [None] * 4, "SPMe": [None] * 4, "DFN": [None] * 4}
+
+# loop over C-rates
+solutions = {
+    "SPM": [None] * len(C_rates),
+    "SPMe": [None] * len(C_rates),
+    "DFN": [None] * len(C_rates),
+}
 for i, C_rate in enumerate(C_rates):
     print("C-rate = {}".format(C_rate))
-
-    # models
-    spm_model = pb.lithium_ion.SPM()
-    spme_model = pb.lithium_ion.SPMe()
-    dfn_model = pb.lithium_ion.DFN()
-
-    # parameters
-    chemistry = pb.parameter_sets.Ecker2015
-    parameter_values = pb.ParameterValues(chemistry=chemistry)
-    parameter_values.update({"C-rate": C_rate})
-
-    # var pts
-    var = pb.standard_spatial_vars
-    # var_pts = {var.x_n: 101, var.x_s: 101, var.x_p: 101, var.r_n: 101, var.r_p: 101}
-    var_pts = {
-        var.x_n: int(parameter_values.evaluate(pb.geometric_parameters.L_n / 1e-6)),
-        var.x_s: int(parameter_values.evaluate(pb.geometric_parameters.L_s / 1e-6)),
-        var.x_p: int(parameter_values.evaluate(pb.geometric_parameters.L_p / 1e-6)),
-        # var.r_n: int(parameter_values.evaluate(pb.geometric_parameters.R_n / 1e-7)),
-        # var.r_p: int(parameter_values.evaluate(pb.geometric_parameters.R_p / 1e-7)),
-        var.r_n: 250,
-        var.r_p: 250,
-    }
 
     # solve models
     t_eval = t_evals[i]
 
-    # SPM
-    sim = pb.Simulation(
-        spm_model, parameter_values=parameter_values, var_pts=var_pts, C_rate=C_rate
-    )
-    print("Solving SPM...")
-    sim.solve(t_eval=t_eval, solver=pb.CasadiSolver(mode="fast"))
-    solutions["SPM"][i] = sim.solution
-    # SPMe
-    sim = pb.Simulation(
-        spme_model, parameter_values=parameter_values, var_pts=var_pts, C_rate=C_rate
-    )
-    print("Solving SPMe...")
-    sim.solve(t_eval=t_eval, solver=pb.CasadiSolver(mode="fast"))
-    solutions["SPMe"][i] = sim.solution
-    # DFN
-    sim = pb.Simulation(
-        dfn_model, parameter_values=parameter_values, var_pts=var_pts, C_rate=C_rate
-    )
-    print("Solving DFN...")
-    sim.solve(t_eval=t_eval, solver=pb.CasadiSolver(mode="fast"))
-    solutions["DFN"][i] = sim.solution
-
+    for name, sim in sims.items():
+        print("Solving {}...".format(name))
+        sim.solve(
+            t_eval=t_eval,
+            solver=pybamm.CasadiSolver(mode="fast"),
+            inputs={"C-rate": C_rate},
+        )
+        solutions[name] = sim.solution
 print("Finished")
 
 # plot

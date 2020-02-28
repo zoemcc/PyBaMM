@@ -31,8 +31,9 @@ def nco_electrolyte_reaction_rate_Ecker2015(T, T_inf, E_r, R_g):
         Reaction rate
     """
 
-    # m_ref = 6 * 10 ** (-7)
-    m_ref = 5.01338 * 10 ** (-6)
-    arrhenius = exp(E_r / R_g * (1 / T_inf - 1 / T))
+    F = 96487
+    k_ref = 5.196e-11
+    m_ref = F * k_ref
+    arrhenius = exp(-E_r / (R_g * T)) * exp(E_r / (R_g * 296))
 
     return m_ref * arrhenius

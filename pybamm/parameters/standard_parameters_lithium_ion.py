@@ -22,8 +22,10 @@ from scipy import constants
 "1. Dimensional Parameters"
 
 # Physical constants
-R = pybamm.Scalar(constants.R)
-F = pybamm.Scalar(constants.physical_constants["Faraday constant"][0])
+R = pybamm.Scalar(8.3144)  # pybamm.Scalar(constants.R)
+F = pybamm.Scalar(
+    96487
+)  # pybamm.Scalar(constants.physical_constants["Faraday constant"][0])
 T_ref = pybamm.Parameter("Reference temperature [K]")
 
 # Macroscale geometry

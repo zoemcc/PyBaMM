@@ -33,10 +33,14 @@ def electrolyte_conductivity_Ecker2015(c_e, T, T_inf, E_k_e, R_g):
         Solid diffusivity
     """
 
+    # mol/m^3 to mol/l
     cm = 1e-3 * c_e
 
-    sigma_e = 0.2667 * cm ** 3 - 1.2983 * cm ** 2 + 1.7919 * cm + 0.1726
+    # value at T = 296K
+    sigma_e_296 = 0.2667 * cm ** 3 - 1.2983 * cm ** 2 + 1.7919 * cm + 0.1726
 
-    C = T_inf * exp(E_k_e / R_g * (1 / T_inf))
+    # add temperature dependence
+    C = 296 * exp(E_k_e / (R_g * 296))
+    sigma_e = C * sigma_e_296 * exp(-E_k_e / (R_g * T)) / T
 
-    return C * sigma_e * exp(-E_k_e / R_g * (1 / T)) / T
+    return sigma_e
