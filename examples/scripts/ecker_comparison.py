@@ -31,8 +31,8 @@ var_pts = {
     var.x_p: int(parameter_values.evaluate(pybamm.geometric_parameters.L_p / 1e-6)),
     # var.r_n: int(parameter_values.evaluate(pybamm.geometric_parameters.R_n / 1e-7)),
     # var.r_p: int(parameter_values.evaluate(pybamm.geometric_parameters.R_p / 1e-7)),
-    var.r_n: 250,
-    var.r_p: 250,
+    var.r_n: 250,  # extra fine just to be sure
+    var.r_p: 250,  # extra fin just to be sure
 }
 
 # set up simulations
@@ -77,71 +77,116 @@ for i, C_rate in enumerate(C_rates):
             solver=pybamm.CasadiSolver(mode="fast"),
             inputs={"C-rate": C_rate},
         )
-        solutions[name] = sim.solution
+        solutions[name][i] = sim.solution
+
 print("Finished")
 
-# plot
-fig, ax = plt.subplots(2, 2)
+# plot - could be made more efficiently, but oh well...
+fig, ax = plt.subplots(2, 2, figsize=(6, 5))
 fig.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5)
+linestyles = ["dotted", "dashed", "solid", "dashdot"]
+V_major_ticks = np.arange(2.4, 4.2, 0.2)
+V_minor_ticks = np.arange(2.5, 4.1, 0.2)
+
 # 1C
-for key in solutions.keys():
+for i, key in enumerate(solutions.keys()):
     t = solutions[key][0]["Time [s]"](solutions[key][0].t)
     V = solutions[key][0]["Terminal voltage [V]"](solutions[key][0].t)
-    ax[0, 0].plot(t, V, label=key + "(PyBaMM)")
+    ax[0, 0].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i])
 ax[0, 0].plot(
-    voltage_data_1C["t(s)"], voltage_data_1C["Voltage(V)"], label="DFN (Dandeliion)"
+    voltage_data_1C["t(s)"],
+    voltage_data_1C["Voltage(V)"],
+    label="DFN (Dandeliion)",
+    linestyle=linestyles[3],
 )
 ax[0, 0].set_xlabel("Time [s]")
 ax[0, 0].set_ylabel("Voltage [V]")
 ax[0, 0].set_xlim([0, 4000])
 ax[0, 0].set_ylim([2.4, 4.2])
-ax[0, 0].grid()
-ax[0, 0].legend()
+t_major_ticks = np.arange(0, 4000, 500)
+t_minor_ticks = np.arange(250, 3750, 500)
+ax[0, 0].set_xticks(t_major_ticks)
+ax[0, 0].set_xticks(t_minor_ticks, minor=True)
+ax[0, 0].set_yticks(V_major_ticks)
+ax[0, 0].set_yticks(V_minor_ticks, minor=True)
+ax[0, 0].grid(which="major")
+ax[0, 0].legend(loc="lower left")
 ax[0, 0].title.set_text("1C")
+
 # 2.5C
-for key in solutions.keys():
+for i, key in enumerate(solutions.keys()):
     t = solutions[key][1]["Time [s]"](solutions[key][1].t)
     V = solutions[key][1]["Terminal voltage [V]"](solutions[key][1].t)
-    ax[0, 1].plot(t, V, label=key + "(PyBaMM)")
+    ax[0, 1].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i])
 ax[0, 1].plot(
-    voltage_data_2_5C["t(s)"], voltage_data_2_5C["Voltage(V)"], label="DFN (Dandeliion)"
+    voltage_data_2_5C["t(s)"],
+    voltage_data_2_5C["Voltage(V)"],
+    label="DFN (Dandeliion)",
+    linestyle=linestyles[3],
 )
 ax[0, 1].set_xlabel("Time [s]")
 ax[0, 1].set_ylabel("Voltage [V]")
 ax[0, 1].set_xlim([0, 1600])
 ax[0, 1].set_ylim([2.4, 4.2])
-ax[0, 1].grid()
-ax[0, 1].legend()
+t_major_ticks = np.arange(0, 1600, 200)
+t_minor_ticks = np.arange(100, 1500, 200)
+ax[0, 1].set_xticks(t_major_ticks)
+ax[0, 1].set_xticks(t_minor_ticks, minor=True)
+ax[0, 1].set_yticks(V_major_ticks)
+ax[0, 1].set_yticks(V_minor_ticks, minor=True)
+ax[0, 1].grid(which="major")
+ax[0, 1].legend(loc="lower left")
 ax[0, 1].title.set_text("2.5C")
+
 # 5C
-for key in solutions.keys():
+for i, key in enumerate(solutions.keys()):
     t = solutions[key][2]["Time [s]"](solutions[key][2].t)
     V = solutions[key][2]["Terminal voltage [V]"](solutions[key][2].t)
-    ax[1, 0].plot(t, V, label=key + "(PyBaMM)")
+    ax[1, 0].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i])
 ax[1, 0].plot(
-    voltage_data_5C["t(s)"], voltage_data_5C["Voltage(V)"], label="DFN (Dandeliion)"
+    voltage_data_5C["t(s)"],
+    voltage_data_5C["Voltage(V)"],
+    label="DFN (Dandeliion)",
+    linestyle=linestyles[3],
 )
 ax[1, 0].set_xlabel("Time [s]")
 ax[1, 0].set_ylabel("Voltage [V]")
 ax[1, 0].set_xlim([0, 800])
 ax[1, 0].set_ylim([2.4, 4.2])
-ax[1, 0].grid()
-ax[1, 0].legend()
+t_major_ticks = np.arange(0, 800, 100)
+t_minor_ticks = np.arange(50, 750, 100)
+ax[1, 0].set_xticks(t_major_ticks)
+ax[1, 0].set_xticks(t_minor_ticks, minor=True)
+ax[1, 0].set_yticks(V_major_ticks)
+ax[1, 0].set_yticks(V_minor_ticks, minor=True)
+ax[1, 0].grid(which="major")
+ax[1, 0].legend(loc="lower left")
 ax[1, 0].title.set_text("5C")
+
 # 7.5C
-for key in solutions.keys():
+for i, key in enumerate(solutions.keys()):
     t = solutions[key][3]["Time [s]"](solutions[key][3].t)
     V = solutions[key][3]["Terminal voltage [V]"](solutions[key][3].t)
-    ax[1, 1].plot(t, V, label=key + "(PyBaMM)")
+    ax[1, 1].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i])
 ax[1, 1].plot(
-    voltage_data_7_5C["t(s)"], voltage_data_7_5C["Voltage(V)"], label="DFN (Dandeliion)"
+    voltage_data_7_5C["t(s)"],
+    voltage_data_7_5C["Voltage(V)"],
+    label="DFN (Dandeliion)",
+    linestyle=linestyles[3],
 )
 ax[1, 1].set_xlabel("Time [s]")
 ax[1, 1].set_ylabel("Voltage [V]")
 ax[1, 1].set_xlim([0, 500])
 ax[1, 1].set_ylim([2.4, 4.2])
-ax[1, 1].grid()
-ax[1, 1].legend()
+t_major_ticks = np.arange(0, 500, 100)
+t_minor_ticks = np.arange(50, 450, 100)
+ax[1, 1].set_xticks(t_major_ticks)
+ax[1, 1].set_xticks(t_minor_ticks, minor=True)
+ax[1, 1].set_yticks(V_major_ticks)
+ax[1, 1].set_yticks(V_minor_ticks, minor=True)
+ax[1, 1].grid(which="major")
+ax[1, 1].legend(loc="lower left")
 ax[1, 1].title.set_text("7.5C")
 
+# plt.savefig("ecker_c_rates.pdf", format="pdf", dpi=1000)
 plt.show()

@@ -53,7 +53,6 @@ for i_N, N in enumerate(npts):
     times = [None] * len(solvers)
     for i, solver in enumerate(solvers):
         print("Solver = {}".format(solver.name))
-        sim.solve(solver=solver, t_eval=t_eval)
         try:
             sim.solve(solver=solver, t_eval=t_eval)
             times[i] = sim.solution.solve_time
@@ -62,7 +61,6 @@ for i_N, N in enumerate(npts):
 
     # add solve time data
     data[i_N][2:] = times
-
 
 # make table
 headers = ["N", "States", *[solver.name for solver in solvers]]
