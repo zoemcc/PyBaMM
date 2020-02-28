@@ -44,10 +44,10 @@ for name, model in models.items():
 # stop before e.g. surface concentration goes negative)
 C_rates = [1, 2.5, 5, 7.5]
 t_evals = [
-    np.linspace(0, 3830, 1000),
-    np.linspace(0, 1520, 1000),
-    np.linspace(0, 730, 1000),
-    np.linspace(0, 450, 1000),
+    np.linspace(0, 3800, 1000),
+    np.linspace(0, 1510, 1000),
+    np.linspace(0, 720, 1000),
+    np.linspace(0, 440, 1000),
 ]
 # t_evals = [
 #    np.array(voltage_data_1C["t(s)"]),
