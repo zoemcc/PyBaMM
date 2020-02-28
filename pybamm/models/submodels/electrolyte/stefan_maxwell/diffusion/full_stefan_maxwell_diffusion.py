@@ -21,7 +21,8 @@ class Full(BaseModel):
     **Extends:** :class:`pybamm.electrolyte.stefan_maxwell.diffusion.BaseModel`
     """
 
-    def __init__(self, param, reactions):
+    def __init__(self, param, reactions, const_diff=False):
+        self.const_diff = const_diff
         super().__init__(param, reactions)
 
     def get_fundamental_variables(self):
@@ -39,7 +40,10 @@ class Full(BaseModel):
 
         param = self.param
 
-        N_e_diffusion = -tor * param.D_e(c_e, T) * pybamm.grad(c_e)
+        if self.const_diff:
+            N_e_diffusion = -tor * param.D_e(1, T) * pybamm.grad(c_e)
+        else:
+            N_e_diffusion = -tor * param.D_e(c_e, T) * pybamm.grad(c_e)
         # N_e_migration = (param.C_e * param.t_plus) / param.gamma_e * i_e
         # N_e_convection = c_e * v_box
 
@@ -63,15 +67,25 @@ class Full(BaseModel):
 
         # source_term = ((param.s - param.t_plus) / param.gamma_e) * pybamm.div(i_e)
         # source_term = pybamm.div(i_e) / param.gamma_e  # lithium-ion
-        source_terms = sum(
-            pybamm.Concatenation(
-                reaction["Negative"]["s"] * variables[reaction["Negative"]["aj"]],
+        if self.const_diff:
+            # Note: only correct for single (main) reaction
+            i_e_n = variables["Negative electrolyte current density"]
+            i_e_p = variables["Positive electrolyte current density"]
+            source_terms = pybamm.Concatenation(
+                (1 - param.t_plus) * i_e_n / param.l_n,
                 pybamm.FullBroadcast(0, "separator", "current collector"),
-                reaction["Positive"]["s"] * variables[reaction["Positive"]["aj"]],
+                (1 - param.t_plus) * i_e_p / param.l_p,
             )
-            / param.gamma_e
-            for reaction in self.reactions.values()
-        )
+        else:
+            source_terms = sum(
+                pybamm.Concatenation(
+                    reaction["Negative"]["s"] * variables[reaction["Negative"]["aj"]],
+                    pybamm.FullBroadcast(0, "separator", "current collector"),
+                    reaction["Positive"]["s"] * variables[reaction["Positive"]["aj"]],
+                )
+                / param.gamma_e
+                for reaction in self.reactions.values()
+            )
 
         self.rhs = {
             c_e: (1 / eps)

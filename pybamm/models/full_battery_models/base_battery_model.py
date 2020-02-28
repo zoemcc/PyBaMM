@@ -665,6 +665,11 @@ class BaseBatteryModel(pybamm.BaseModel):
 
         self.variables.update(
             {
+                "Paper voltage [V]": ocv_av_dim
+                + eta_r_av_dim
+                + eta_c_av_dim
+                + eta_e_av_dim
+                + delta_phi_s_av,
                 "X-averaged battery open circuit voltage [V]": ocv_av_dim * num_cells,
                 "Measured battery open circuit voltage [V]": ocv_dim * num_cells,
                 "X-averaged battery reaction overpotential [V]": eta_r_av_dim

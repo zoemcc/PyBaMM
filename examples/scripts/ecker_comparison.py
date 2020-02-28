@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# pybamm.set_logging_level("INFO")
+# pybamm.set_logging_level("DEBUG")
+# pybamm.settings.debug_mode = True
 # load data
 voltage_data_1C = pd.read_csv("ddliion/voltage_1C.dat", sep="\t")
 voltage_data_2_5C = pd.read_csv("ddliion/voltage_2_5C.dat", sep="\t")
@@ -79,6 +80,9 @@ for i, C_rate in enumerate(C_rates):
 
 print("Finished")
 
+# qp = pybamm.QuickPlot(solutions["SPMe"][3])
+# qp.dynamic_plot()
+
 # plot - could be made more efficiently, but oh well...
 fig, ax = plt.subplots(2, 2, figsize=(6, 5))
 fig.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5)
@@ -91,7 +95,9 @@ V_minor_ticks = np.arange(2.5, 4.1, 0.2)
 for i, key in enumerate(solutions.keys()):
     t = solutions[key][0]["Time [s]"](solutions[key][0].t)
     V = solutions[key][0]["Terminal voltage [V]"](solutions[key][0].t)
-    ax[0, 0].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i])
+    ax[0, 0].plot(
+        t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i]
+    )
 ax[0, 0].plot(
     voltage_data_1C["t(s)"],
     voltage_data_1C["Voltage(V)"],
@@ -117,7 +123,9 @@ ax[0, 0].title.set_text("1C")
 for i, key in enumerate(solutions.keys()):
     t = solutions[key][1]["Time [s]"](solutions[key][1].t)
     V = solutions[key][1]["Terminal voltage [V]"](solutions[key][1].t)
-    ax[0, 1].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i])
+    ax[0, 1].plot(
+        t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i]
+    )
 ax[0, 1].plot(
     voltage_data_2_5C["t(s)"],
     voltage_data_2_5C["Voltage(V)"],
@@ -143,7 +151,9 @@ ax[0, 1].title.set_text("2.5C")
 for i, key in enumerate(solutions.keys()):
     t = solutions[key][2]["Time [s]"](solutions[key][2].t)
     V = solutions[key][2]["Terminal voltage [V]"](solutions[key][2].t)
-    ax[1, 0].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i])
+    ax[1, 0].plot(
+        t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i]
+    )
 ax[1, 0].plot(
     voltage_data_5C["t(s)"],
     voltage_data_5C["Voltage(V)"],
@@ -169,7 +179,9 @@ ax[1, 0].title.set_text("5C")
 for i, key in enumerate(solutions.keys()):
     t = solutions[key][3]["Time [s]"](solutions[key][3].t)
     V = solutions[key][3]["Terminal voltage [V]"](solutions[key][3].t)
-    ax[1, 1].plot(t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i])
+    ax[1, 1].plot(
+        t, V, label=key + "(PyBaMM)", linestyle=linestyles[i], color=colors[i]
+    )
 ax[1, 1].plot(
     voltage_data_7_5C["t(s)"],
     voltage_data_7_5C["Voltage(V)"],
