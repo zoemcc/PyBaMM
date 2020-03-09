@@ -10,7 +10,7 @@ run = False
 
 if run is False:
 
-    sol = pickle.load(open("spme_dfn_errors.p", "rb"))
+    sol = pickle.load(open("spm_dfn_max_errors.p", "rb"))
 
     plt.plot(sol["pts"], sol["voltage errors"])
     plt.plot(sol["pts"], sol["c_s_n_errors"])
@@ -53,7 +53,6 @@ if run is False:
     print_err("phi_s_p_errors", "phi_s_p", pts)
     print_err("phi_e_errors", "phi_e", pts)
     print_err("c_e_errors", "c_e", pts)
-
 
     plt.plot(sol["pts"], rel(sol["voltage errors"]))
     plt.plot(sol["pts"], rel(sol["c_s_n_errors"]))
@@ -124,7 +123,7 @@ else:
         dfn_sim = pybamm.Simulation(dfn, var_pts=pts(p), solver=solver)
         dfn_sim.solve()
 
-        spme = pybamm.lithium_ion.SPMe(options)
+        spme = pybamm.lithium_ion.SPM(options)
         spme_solver = pybamm.CasadiSolver(mode="fast")
         spme_sim = pybamm.Simulation(spme, var_pts=pts(p), solver=solver)
         spme_sim.solve()
@@ -166,8 +165,11 @@ else:
         ).flatten()
 
         def err(a, b):
-            norm = np.sum((a) ** 2) ** (1 / 2)  # normalizing factor
-            rms = np.sum((a - b) ** 2) ** (1 / 2)
+            # norm = np.sum((a) ** 2) ** (1 / 2)  # normalizing factor
+            # rms = np.sum((a - b) ** 2) ** (1 / 2)
+            norm = np.max(np.abs(a))
+            rms = np.max(np.abs(a - b))
+
             return rms / norm
 
         voltage_errors[i] = err(v_dfn, v_spm)
@@ -188,7 +190,7 @@ else:
         "phi_e_errors": phi_e_errors,
         "c_e_errors": c_e_errors,
     }
-    pickle.dump(out, open("spme_dfn_errors.p", "wb"))
+    pickle.dump(out, open("spm_dfn_max_errors.p", "wb"))
 
     plt.plot(other_pts, voltage_errors)
     plt.plot(other_pts, c_s_n_errors)
