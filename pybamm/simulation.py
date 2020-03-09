@@ -83,7 +83,7 @@ class Simulation:
         var_pts=None,
         spatial_methods=None,
         solver=None,
-        output_variables=None,
+        quick_plot_vars=None,
         C_rate=None,
     ):
         self._parameter_values = parameter_values or model.default_parameter_values
@@ -488,7 +488,7 @@ class Simulation:
             save=save,
         )
 
-    def interactive(self, inputs, output_variables=None, testing=False, **kwargs):
+    def interactive(self, inputs, quick_plot_vars=None, testing=False, **kwargs):
         """
         Create an interactive simulation and plot.
         This creates a :class:`pybamm.InteractivePlot` object.
@@ -507,7 +507,9 @@ class Simulation:
         self.solve(inputs=initial_inputs, **kwargs)
 
         # Call an interactive plot
-        plot = pybamm.InteractivePlot(self, initial_inputs, output_variables)
+        plot = pybamm.InteractivePlot(
+            self, initial_inputs, output_variables=quick_plot_vars
+        )
 
         # Plot
         if isnotebook():  # pragma: no cover
@@ -549,7 +551,7 @@ class Simulation:
         else:
             return tuple(variable_arrays)
 
-    def plot(self, output_variables=None, testing=False):
+    def plot(self, quick_plot_vars=None, testing=False):
         """
         A method to quickly plot the outputs of the simulation.
         This creates a :class:`pybamm.QuickPlot` object.
@@ -567,10 +569,10 @@ class Simulation:
                 "Model has not been solved, please solve the model before plotting."
             )
 
-        if output_variables is None:
-            output_variables = self.quick_plot_vars
+        if quick_plot_vars is None:
+            quick_plot_vars = self.quick_plot_vars
 
-        plot = pybamm.QuickPlot(self._solution, output_variables=output_variables)
+        plot = pybamm.QuickPlot(self._solution, output_variables=quick_plot_vars)
 
         if isnotebook():  # pragma: no cover
             import ipywidgets as widgets
@@ -666,7 +668,7 @@ class Simulation:
         var_pts=None,
         spatial_methods=None,
         solver=None,
-        output_variables=None,
+        quick_plot_vars=None,
         C_rate=None,
     ):
         """

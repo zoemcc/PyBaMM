@@ -15,17 +15,18 @@ class InteractivePlot(pybamm.QuickPlot):
     ----------
     sim : :class:`pybamm.Simulation`
         The simulation to be used for plotting
-    hold : int
-        How many previous solutions to hold. Set to -1 to hold all previous solutions.
     kwargs : keyword-arguments
         Keyword arguments to be passed to :class:`pybamm.QuickPlot`
 
     **Extends**: :class:`pybamm.QuickPlot`
     """
 
-    def __init__(self, sim, hold=1, **kwargs):
+    def __init__(self, sim, initial_inputs, **kwargs):
         super().__init__(sim.solution, **kwargs)
-        self.hold = hold
+        self.initial_inputs = initial_inputs
+
+        # Legend for the full figure
+        self.fig_legend_location = "upper right"
 
     def dynamic_plot(self, testing=False):
         """
@@ -48,27 +49,25 @@ class InteractivePlot(pybamm.QuickPlot):
 
         # Text boxes
         self.text_boxes = {}
-        for input_name, value in self.initial_inputs.items():
-            ax_box = plt.axes([0.9, 0.02, 0.98, 0.03])
+        for k, (input_name, value) in enumerate(self.initial_inputs.items()):
+            ax_box = plt.axes([0.9, k * 0.1 + 0.1, 0.08, 0.03])
             self.text_boxes[input_name] = TextBox(
                 ax_box, input_name, initial=str(value)
             )
             self.text_boxes[input_name].on_submit(SubmitText(self, input_name))
 
         # Reset button
-        ax_reset = plt.axes([0.9, 0.02, 0.98, 0.03])
+        ax_reset = plt.axes([0.9, 0.02, 0.03, 0.03])
         self.reset_button = Button(ax_reset, "Reset")
         self.reset_button.on_clicked(self.reset)
 
-        # Undo button
-        ax_undo = plt.axes([0.9, 0.02, 0.98, 0.03])
-        self.undo_button = Button(ax_undo, "Undo")
-        self.undo_button.on_clicked(self.undo)
+        # Keep button
+        ax_keep = plt.axes([0.95, 0.02, 0.03, 0.03])
+        self.keep_button = Button(ax_keep, "Keep")
+        self.keep_button.on_clicked(self.keep)
 
         # ignore the warning about tight layout
-        warnings.simplefilter("ignore")
-        self.fig.tight_layout()
-        warnings.simplefilter("always")
+        self.fig.subplots_adjust(bottom=0.1, right=0.9)
 
         if not testing:  # pragma: no cover
             plt.show()
@@ -76,8 +75,8 @@ class InteractivePlot(pybamm.QuickPlot):
     def reset(self):
         "Reset the interactive plot"
 
-    def undo(self):
-        "Undo the last action"
+    def keep(self):
+        "Keep the last simulation"
 
 
 class SubmitText(object):
@@ -88,7 +87,8 @@ class SubmitText(object):
     def __call__(self, value):
         self.plot.inputs[self.input_name] = value
         # Run the simulation with new inputs
-        # Query self.hold
+        self.sim.solve(inputs=self.plot.inputs)
+
         # Update legend
         # Update external file with the parameter values
         # Update text on screen (success, failure, see terminal for more detail)

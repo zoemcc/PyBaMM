@@ -90,6 +90,9 @@ class QuickPlot(object):
         self.colors = colors
         self.linestyles = linestyles
 
+        # Legend for the full figure
+        self.fig_legend_location = "lower right"
+
         # Time scale in hours
         self.time_scale = models[0].timescale_eval / 3600
         # Spatial scales (default to 1 if information not in model)
@@ -358,7 +361,7 @@ class QuickPlot(object):
                     loc="lower center",
                 )
         # Legend for models
-        self.fig.legend(self.labels, loc="lower right")
+        self.fig.legend(self.labels, loc=self.fig_legend_location)
 
     def dynamic_plot(self, testing=False):
         """
@@ -374,8 +377,8 @@ class QuickPlot(object):
 
         axcolor = "lightgoldenrodyellow"
         axfreq = plt.axes([0.315, 0.02, 0.37, 0.03], facecolor=axcolor)
-        self.sfreq = Slider(axfreq, "Time", 0, self.max_t, valinit=0)
-        self.sfreq.on_changed(self.update)
+        self.slider = Slider(axfreq, "Time", 0, self.max_t, valinit=0)
+        self.slider.on_changed(self.update)
 
         # ignore the warning about tight layout
         warnings.simplefilter("ignore")
@@ -389,7 +392,7 @@ class QuickPlot(object):
         """
         Update the plot in self.plot() with values at new time
         """
-        t = self.sfreq.val
+        t = self.slider.val
         t_dimensionless = t / self.time_scale
         for key, plot in self.plots.items():
             if self.variables[key][0][0].dimensions == 2:
