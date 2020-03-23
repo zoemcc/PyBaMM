@@ -37,6 +37,14 @@ class SolverError(Exception):
     pass
 
 
+class SolverWarning(UserWarning):
+    """
+    Solver warning: the chosen solver settings may not give the desired output
+    """
+
+    pass
+
+
 class ShapeError(Exception):
     """
     Shape error: cannot evaluate an object to find its shape
@@ -53,18 +61,9 @@ class ModelWarning(UserWarning):
     pass
 
 
-class UndefinedOperationError(Exception):
-    """
-    Undefined operation: Raised when a mathematical operation is not well-defined
-    """
-
-    pass
-
-
 class InputError(Exception):
     """
     An external variable has been input incorrectly into PyBaMM
     """
 
     pass
-

@@ -16,7 +16,7 @@ else:
     pybamm.set_logging_level("INFO")
 
 # load models
-options = {"thermal": "isothermal"}
+options = {"thermal": "x-lumped"}
 models = [
     pybamm.lithium_ion.SPM(options),
     pybamm.lithium_ion.SPMe(options),
@@ -46,7 +46,7 @@ for model in models:
 
 # solve model
 solutions = [None] * len(models)
-t_eval = np.linspace(0, 0.3, 100)
+t_eval = np.linspace(0, 3600, 100)
 for i, model in enumerate(models):
     solutions[i] = model.default_solver.solve(model, t_eval)
 

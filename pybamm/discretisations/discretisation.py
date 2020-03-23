@@ -178,9 +178,7 @@ class Discretisation(object):
         for event in model.events:
             pybamm.logger.debug("Discretise event '{}'".format(event.name))
             processed_event = pybamm.Event(
-                event.name,
-                self.process_symbol(event.expression),
-                event.event_type
+                event.name, self.process_symbol(event.expression), event.event_type
             )
             processed_events.append(processed_event)
         model_disc.events = processed_events
@@ -228,7 +226,7 @@ class Discretisation(object):
                     for child, mesh in meshes.items():
                         for domain_mesh in mesh:
                             submesh = domain_mesh[i]
-                            end += submesh.npts_for_broadcast
+                            end += submesh.npts_for_broadcast_to_nodes
                         y_slices[child.id].append(slice(start, end))
                         start = end
             else:
@@ -236,7 +234,8 @@ class Discretisation(object):
                 y_slices[variable.id].append(slice(start, end))
                 start = end
 
-        self.y_slices = y_slices
+        # Convert y_slices back to normal dictionary
+        self.y_slices = dict(y_slices)
 
         # reset discretised_symbols
         self._discretised_symbols = {}
@@ -250,7 +249,7 @@ class Discretisation(object):
             size = 0
             for dom in variable.domain:
                 for submesh in self.spatial_methods[dom].mesh[dom]:
-                    size += submesh.npts_for_broadcast
+                    size += submesh.npts_for_broadcast_to_nodes
             return size
 
     def _preprocess_external_variables(self, model):
@@ -402,7 +401,7 @@ class Discretisation(object):
         # check that all initial conditions are set
         processed_concatenated_initial_conditions = self._concatenate_in_order(
             processed_initial_conditions, check_complete=True
-        ).evaluate(0, None)
+        )
 
         return processed_initial_conditions, processed_concatenated_initial_conditions
 
@@ -516,6 +515,7 @@ class Discretisation(object):
             equations) and processed_concatenated_algebraic
 
         """
+
         # Discretise right-hand sides, passing domain from variable
         processed_rhs = self.process_dict(model.rhs)
 
@@ -857,6 +857,13 @@ class Discretisation(object):
             disc_children = [self.process_symbol(child) for child in symbol.children]
             return symbol._function_new_copy(disc_children)
 
+        elif isinstance(symbol, pybamm.VariableDot):
+            return pybamm.StateVectorDot(
+                *self.y_slices[symbol.get_variable().id],
+                domain=symbol.domain,
+                auxiliary_domains=symbol.auxiliary_domains
+            )
+
         elif isinstance(symbol, pybamm.Variable):
             # Check if variable is a standard variable or an external variable
             if any(symbol.id == var.id for var in self.external_variables.values()):
@@ -887,8 +894,23 @@ class Discretisation(object):
                     return out
 
             else:
+                # add a try except block for a more informative error if a variable
+                # can't be found. This should usually be caught earlier by
+                # model.check_well_posedness, but won't be if debug_mode is False
+                try:
+                    y_slices = self.y_slices[symbol.id]
+                except KeyError:
+                    raise pybamm.ModelError(
+                        """
+                        No key set for variable '{}'. Make sure it is included in either
+                        model.rhs, model.algebraic, or model.external_variables in an
+                        unmodified form (e.g. not Broadcasted)
+                        """.format(
+                            symbol.name
+                        )
+                    )
                 return pybamm.StateVector(
-                    *self.y_slices[symbol.id],
+                    *y_slices,
                     domain=symbol.domain,
                     auxiliary_domains=symbol.auxiliary_domains
                 )
@@ -996,17 +1018,20 @@ class Discretisation(object):
         """Check initial conditions are a numpy array"""
         # Individual
         for var, eqn in model.initial_conditions.items():
-            assert type(eqn.evaluate(0, None)) is np.ndarray, pybamm.ModelError(
+            assert isinstance(
+                eqn.evaluate(t=0, u="shape test"), np.ndarray
+            ), pybamm.ModelError(
                 """
                 initial_conditions must be numpy array after discretisation but they are
                 {} for variable '{}'.
                 """.format(
-                    type(eqn.evaluate(0, None)), var
+                    type(eqn.evaluate(t=0, u="shape test")), var
                 )
             )
         # Concatenated
         assert (
-            type(model.concatenated_initial_conditions) is np.ndarray
+            type(model.concatenated_initial_conditions.evaluate(t=0, u="shape test"))
+            is np.ndarray
         ), pybamm.ModelError(
             """
             Concatenated initial_conditions must be numpy array after discretisation but
