@@ -586,18 +586,24 @@ class QuickPlot(object):
                     "{} [{}]".format(y_name, self.spatial_unit), fontsize=fontsize
                 )
                 vmin, vmax = self.variable_limits[key]
+
+                vmin = np.min(var)
+                vmax = np.max(var)
+
                 ax.contourf(
                     x, y, var, levels=100, vmin=vmin, vmax=vmax, cmap="coolwarm"
                 )
                 if vmin is None and vmax is None:
                     vmin = ax_min(var)
                     vmax = ax_max(var)
+
                 self.colorbars[key] = self.fig.colorbar(
                     cm.ScalarMappable(
                         colors.Normalize(vmin=vmin, vmax=vmax), cmap="coolwarm"
                     ),
                     ax=ax,
                 )
+
             # Set either y label or legend entries
             if len(key) == 1:
                 title = split_long_string(key[0])
@@ -713,12 +719,20 @@ class QuickPlot(object):
                     x = self.first_dimensional_spatial_variable[key]
                     y = self.second_dimensional_spatial_variable[key]
                     var = variable(t_dimensionless, **spatial_vars, warn=False).T
+
+                vmin = np.min(var)
+                vmax = np.max(var)
                 ax.contourf(
                     x, y, var, levels=100, vmin=vmin, vmax=vmax, cmap="coolwarm"
                 )
+
+                vmin = None
+                vmax = None
                 if (vmin, vmax) == (None, None):
                     vmin = ax_min(var)
                     vmax = ax_max(var)
+                    vmin = np.min(var)
+                    vmax = np.max(var)
                     cb = self.colorbars[key]
                     cb.update_bruteforce(
                         cm.ScalarMappable(

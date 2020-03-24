@@ -31,7 +31,7 @@ def graphite_electrolyte_reaction_rate_Kim2011(T, T_inf, E_r, R_g):
     """
 
     i0_ref = 36  # reference exchange current density at 100% SOC
-    sto = 0.36  # stochiometry at 100% SOC
+    sto = 0.63  # stochiometry at 100% SOC
     c_s_n_max = 2.87 * 10 ** 4  # max electrode concentration
     c_s_n_ref = sto * c_s_n_max  # reference electrode concentration
     c_e_ref = 1.2 * 10 ** 3  # reference electrolyte concentration
