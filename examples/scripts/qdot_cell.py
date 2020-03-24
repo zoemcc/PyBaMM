@@ -1,13 +1,12 @@
 import pybamm as pb
 import numpy as np
-import matplotlib.pyplot as plt
 
 pb.set_logging_level("INFO")
 
+c_rate = 5
 load = False
 
-c_rate = 1
-filename = "qdot_cell_" + str(c_rate) + "C.p"
+filename = "qdot_cell_charge" + str(c_rate) + "C.p"
 
 options = {
     # "current collector": "potential pair",
@@ -44,16 +43,11 @@ kim_set = {
 # for heat transfer lump cooling on 1 side of battery across 48 layers.
 # So h = 25 / 2 / 48
 
-
 sto_n0 = 0.23
 sto_p0 = 0.84
-
-
-c_rate = 1
-one_c_current = -0.25
+one_c_current = -0.38
 
 qdot_set = {
-    "Typical current [A]": 1,
     "Electrode height [m]": 0.155,
     "Electrode width [m]": 0.208,
     "Positive tab width [m]": 0.1664,
@@ -87,24 +81,15 @@ var_pts = {
 }
 
 
-solver = pb.CasadiSolver(mode="safe")
-
 if load is True:
     sim = pb.load(filename)
 elif load is False:
-    sim = pb.Simulation(
-        model,
-        parameter_values=parameter_values,
-        var_pts=var_pts,
-        # solver=solver,
-        # C_rate=c_rate,
-    )
+    sim = pb.Simulation(model, parameter_values=parameter_values, var_pts=var_pts,)
     if c_rate == 1:
         t_eval = np.linspace(0, 3600, 100)
     elif c_rate == 5:
         t_eval = np.linspace(0, 3600 / 5, 100)
-        # t_eval = np.linspace(0, 0.04, 100)
-    # t_eval = np.linspace(0, 0.02, 100)
+
     sim.solve(t_eval=t_eval)
     sim.save(filename)
 
@@ -127,53 +112,54 @@ quick_plot_variables = [
 ]
 
 sim.plot(quick_plot_vars=quick_plot_variables)
-plot_variables = [
-    "Time [h]",
-    "Discharge capacity [A.h]",
-    "X-averaged negative particle surface concentration",
-    "X-averaged positive particle surface concentration",
-    "X-averaged cell temperature [K]",
-    "Current collector current density [A.m-2]",
-    "Volume-averaged Ohmic heating [W.m-3]",
-    "Volume-averaged irreversible electrochemical heating [W.m-3]",
-    "Volume-averaged reversible heating [W.m-3]",
-    "Volume-averaged total heating [W.m-3]",
-    "Volume-averaged cell temperature [K]",
-    "Terminal voltage [V]",
-]
 
-built_model = sim.built_model
-variables = built_model.variables
-sol = sim.solution
-t = sol.t
+# plot_variables = [
+#     "Time [h]",
+#     "Discharge capacity [A.h]",
+#     "X-averaged negative particle surface concentration",
+#     "X-averaged positive particle surface concentration",
+#     "X-averaged cell temperature [K]",
+#     "Current collector current density [A.m-2]",
+#     "Volume-averaged Ohmic heating [W.m-3]",
+#     "Volume-averaged irreversible electrochemical heating [W.m-3]",
+#     "Volume-averaged reversible heating [W.m-3]",
+#     "Volume-averaged total heating [W.m-3]",
+#     "Volume-averaged cell temperature [K]",
+#     "Terminal voltage [V]",
+# ]
 
-print("Final dimensionless time is " + str(t[-1]))
+# built_model = sim.built_model
+# variables = built_model.variables
+# sol = sim.solution
+# t = sol.t
 
-l_n = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_n).evaluate()
-l_s = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_s).evaluate()
-l_p = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_p).evaluate()
+# print("Final dimensionless time is " + str(t[-1]))
 
-l_y = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_y).evaluate()
-l_z = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_z).evaluate()
-L_y = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.L_y).evaluate()
-L_z = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.L_z).evaluate()
+# l_n = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_n).evaluate()
+# l_s = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_s).evaluate()
+# l_p = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_p).evaluate()
 
-cell_volume = 0.00021  # m3
+# l_y = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_y).evaluate()
+# l_z = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.l_z).evaluate()
+# L_y = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.L_y).evaluate()
+# L_z = parameter_values.process_symbol(pb.standard_parameters_lithium_ion.L_z).evaluate()
 
-x_n = np.linspace(0, l_n, 100)
-x_s = np.linspace(0, l_s, 100)
-x_p = np.linspace(0, l_p, 100)
+# cell_volume = 0.00021  # m3
 
-y = np.linspace(0, l_y, 20)
-z = np.linspace(0, l_z, 20)
+# x_n = np.linspace(0, l_n, 100)
+# x_s = np.linspace(0, l_s, 100)
+# x_p = np.linspace(0, l_p, 100)
 
-# sim.plot(["X-averaged positive particle concentration"])
+# y = np.linspace(0, l_y, 20)
+# z = np.linspace(0, l_z, 20)
 
-processed_variables = {}
-for var in plot_variables:
-    processed_variables[var] = pb.ProcessedVariable(variables[var], sol)
+# # sim.plot(["X-averaged positive particle concentration"])
 
-# # plot terminal voltage
+# processed_variables = {}
+# for var in plot_variables:
+#     processed_variables[var] = pb.ProcessedVariable(variables[var], sol)
+
+# # # plot terminal voltage
 # plt.plot(
 #     processed_variables["Time [h]"](t), processed_variables["Terminal voltage [V]"](t)
 # )
@@ -271,128 +257,128 @@ for var in plot_variables:
 # plt.ylabel("Total heat generation [W]")
 # plt.show()
 
-#  current collector current density
-times = [t[0], t[-1] / 3, t[-1] / 2, 2 * t[-1] / 3, t[-1]]
-fig, axes = plt.subplots(1, len(times))
-for i, time in enumerate(times):
+# #  current collector current density
+# times = [t[0], t[-1] / 3, t[-1] / 2, 2 * t[-1] / 3, t[-1]]
+# fig, axes = plt.subplots(1, len(times))
+# for i, time in enumerate(times):
 
-    im = axes[i].pcolormesh(
-        y,
-        z,
-        processed_variables["Current collector current density [A.m-2]"](
-            time, y=y, z=z
-        ).transpose(),
-        shading="gouraud",
-        cmap="plasma",
-    )
+#     im = axes[i].pcolormesh(
+#         y,
+#         z,
+#         processed_variables["Current collector current density [A.m-2]"](
+#             time, y=y, z=z
+#         ).transpose(),
+#         shading="gouraud",
+#         cmap="plasma",
+#     )
 
-    current_time = processed_variables["Time [h]"](time)
-    rounded_time = round(float(current_time), 2)
-    axes[i].set_xlabel(r"$y$")
-    axes[i].set_ylabel(r"$z$")
-    axes[i].set_title(str(rounded_time) + " hours")
+#     current_time = processed_variables["Time [h]"](time)
+#     rounded_time = round(float(current_time), 2)
+#     axes[i].set_xlabel(r"$y$")
+#     axes[i].set_ylabel(r"$z$")
+#     axes[i].set_title(str(rounded_time) + " hours")
 
-    plt.colorbar(
-        im,
-        ax=axes[i],
-        # format=ticker.FuncFormatter(fmt),
-        orientation="horizontal",
-        # pad=0.2,
-        # format=sfmt,
-    )
+#     plt.colorbar(
+#         im,
+#         ax=axes[i],
+#         # format=ticker.FuncFormatter(fmt),
+#         orientation="horizontal",
+#         # pad=0.2,
+#         # format=sfmt,
+#     )
 
-plt.show()
+# plt.show()
 
-# plot negative particle surface concentation
-fig, axes = plt.subplots(1, len(times))
-for i, time in enumerate(times):
+# # plot negative particle surface concentation
+# fig, axes = plt.subplots(1, len(times))
+# for i, time in enumerate(times):
 
-    im = axes[i].pcolormesh(
-        y,
-        z,
-        processed_variables["X-averaged negative particle surface concentration"](
-            time, y=y, z=z
-        ).transpose(),
-        shading="gouraud",
-        cmap="plasma",
-    )
+#     im = axes[i].pcolormesh(
+#         y,
+#         z,
+#         processed_variables["X-averaged negative particle surface concentration"](
+#             time, y=y, z=z
+#         ).transpose(),
+#         shading="gouraud",
+#         cmap="plasma",
+#     )
 
-    current_time = processed_variables["Time [h]"](time)
-    rounded_time = round(float(current_time), 2)
-    axes[i].set_xlabel(r"$y$")
-    axes[i].set_ylabel(r"$z$")
-    axes[i].set_title(str(rounded_time) + " hours")
+#     current_time = processed_variables["Time [h]"](time)
+#     rounded_time = round(float(current_time), 2)
+#     axes[i].set_xlabel(r"$y$")
+#     axes[i].set_ylabel(r"$z$")
+#     axes[i].set_title(str(rounded_time) + " hours")
 
-    plt.colorbar(
-        im,
-        ax=axes[i],
-        # format=ticker.FuncFormatter(fmt),
-        orientation="horizontal",
-        # pad=0.2,
-        # format=sfmt,
-    )
+#     plt.colorbar(
+#         im,
+#         ax=axes[i],
+#         # format=ticker.FuncFormatter(fmt),
+#         orientation="horizontal",
+#         # pad=0.2,
+#         # format=sfmt,
+#     )
 
-plt.show()
+# plt.show()
 
-# plot positive particle surface concentation
-fig, axes = plt.subplots(1, len(times))
-for i, time in enumerate(times):
+# # plot positive particle surface concentation
+# fig, axes = plt.subplots(1, len(times))
+# for i, time in enumerate(times):
 
-    im = axes[i].pcolormesh(
-        y,
-        z,
-        processed_variables["X-averaged positive particle surface concentration"](
-            time, y=y, z=z
-        ).transpose(),
-        shading="gouraud",
-        cmap="plasma",
-    )
+#     im = axes[i].pcolormesh(
+#         y,
+#         z,
+#         processed_variables["X-averaged positive particle surface concentration"](
+#             time, y=y, z=z
+#         ).transpose(),
+#         shading="gouraud",
+#         cmap="plasma",
+#     )
 
-    current_time = processed_variables["Time [h]"](time)
-    rounded_time = round(float(current_time), 2)
-    axes[i].set_xlabel(r"$y$")
-    axes[i].set_ylabel(r"$z$")
-    axes[i].set_title(str(rounded_time) + " hours")
+#     current_time = processed_variables["Time [h]"](time)
+#     rounded_time = round(float(current_time), 2)
+#     axes[i].set_xlabel(r"$y$")
+#     axes[i].set_ylabel(r"$z$")
+#     axes[i].set_title(str(rounded_time) + " hours")
 
-    plt.colorbar(
-        im,
-        ax=axes[i],
-        # format=ticker.FuncFormatter(fmt),
-        orientation="horizontal",
-        # pad=0.2,
-        # format=sfmt,
-    )
+#     plt.colorbar(
+#         im,
+#         ax=axes[i],
+#         # format=ticker.FuncFormatter(fmt),
+#         orientation="horizontal",
+#         # pad=0.2,
+#         # format=sfmt,
+#     )
 
-plt.show()
+# plt.show()
 
-# plot cell temperature
-fig, axes = plt.subplots(1, len(times))
-for i, time in enumerate(times):
+# # plot cell temperature
+# fig, axes = plt.subplots(1, len(times))
+# for i, time in enumerate(times):
 
-    im = axes[i].pcolormesh(
-        y,
-        z,
-        processed_variables["X-averaged cell temperature [K]"](
-            time, y=y, z=z
-        ).transpose()
-        - 273.15,
-        shading="gouraud",
-        cmap="plasma",
-    )
+#     im = axes[i].pcolormesh(
+#         y,
+#         z,
+#         processed_variables["X-averaged cell temperature [K]"](
+#             time, y=y, z=z
+#         ).transpose()
+#         - 273.15,
+#         shading="gouraud",
+#         cmap="plasma",
+#     )
 
-    current_time = processed_variables["Time [h]"](time)
-    rounded_time = round(float(current_time), 2)
-    axes[i].set_xlabel(r"$y$")
-    axes[i].set_ylabel(r"$z$")
-    axes[i].set_title(str(rounded_time) + " hours")
+#     current_time = processed_variables["Time [h]"](time)
+#     rounded_time = round(float(current_time), 2)
+#     axes[i].set_xlabel(r"$y$")
+#     axes[i].set_ylabel(r"$z$")
+#     axes[i].set_title(str(rounded_time) + " hours")
 
-    plt.colorbar(
-        im,
-        ax=axes[i],
-        # format=ticker.FuncFormatter(fmt),
-        orientation="horizontal",
-        # pad=0.2,
-        # format=sfmt,
-    )
+#     plt.colorbar(
+#         im,
+#         ax=axes[i],
+#         # format=ticker.FuncFormatter(fmt),
+#         orientation="horizontal",
+#         # pad=0.2,
+#         # format=sfmt,
+#     )
 
-plt.show()
+# plt.show()
