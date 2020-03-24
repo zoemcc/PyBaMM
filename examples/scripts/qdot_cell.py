@@ -9,8 +9,8 @@ load = False
 filename = "qdot_cell_charge" + str(c_rate) + "C.p"
 
 options = {
-    # "current collector": "potential pair",
-    # "dimensionality": 2,
+    "current collector": "potential pair",
+    "dimensionality": 2,
     "thermal": "x-lumped",
 }
 # options = {}
