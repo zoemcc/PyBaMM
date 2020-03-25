@@ -164,8 +164,30 @@ class BaseThermal(pybamm.BaseSubModel):
         # Dimensional scaling for heat source terms
         Q_scale = param.i_typ * param.potential_scale / param.L_x
 
+        # volume average ohmic heating components
+        Q_ohm_s_av = self._x_average(Q_ohm_s, 0, 0)
+        Q_ohm_s_vol_av = self._yz_average(Q_ohm_s_av)
+
+        Q_ohm_e_av = self._x_average(Q_ohm_e, 0, 0)
+        Q_ohm_e_vol_av = self._yz_average(Q_ohm_e_av)
+
+        Q_ohm_s_cn_vol_av = self._yz_average(Q_ohm_s_cn)
+        Q_ohm_s_cp_vol_av = self._yz_average(Q_ohm_s_cp)
+
+        Q_ohm = Q_ohm_s + Q_ohm_e
+        Q_ohm_av = self._x_average(Q_ohm, Q_ohm_s_cn, Q_ohm_s_cp)
+        Q_ohm_vol_av = self._yz_average(Q_ohm_av)
+
         variables.update(
             {
+                "Volume-averaged electrolyte Ohmic heating [W.m-3]": Q_ohm_e_vol_av
+                * Q_scale,
+                "Volume-averaged solid-phase Ohmic heating [W.m-3]": Q_ohm_s_vol_av
+                * Q_scale,
+                "Volume-averaged negative current collector Ohmic heating [W.m-3]": Q_ohm_s_cn_vol_av
+                * Q_scale,
+                "Volume-averaged positive current collector Ohmic heating [W.m-3]": Q_ohm_s_cp_vol_av
+                * Q_scale,
                 "Ohmic heating": Q_ohm,
                 "Ohmic heating [W.m-3]": Q_ohm * Q_scale,
                 "X-averaged Ohmic heating": Q_ohm_av,

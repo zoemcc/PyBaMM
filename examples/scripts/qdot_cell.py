@@ -10,7 +10,7 @@ filename = "qdot_cell_charge" + str(c_rate) + "C.p"
 
 options = {
     "current collector": "potential pair",
-    "dimensionality": 2,
+    "dimensionality": 1,
     "thermal": "x-lumped",
 }
 # options = {}
@@ -43,18 +43,25 @@ kim_set = {
 # for heat transfer lump cooling on 1 side of battery across 48 layers.
 # So h = 25 / 2 / 48
 
-sto_n0 = 0.23
-sto_p0 = 0.84
-one_c_current = -0.38
+sto_n0 = 0.0712
+sto_p0 = 0.98
+one_c_current = -1
+
+e_width = 0.202
 
 qdot_set = {
+    "Negative current collector thickness [m]": 18e-6,
+    "Negative electrode thickness [m]": 84e-6,
+    "Separator thickness [m]": 25e-6,
+    "Positive electrode thickness [m]": 76e-6,
+    "Positive current collector thickness [m]": 15e-6,
     "Electrode height [m]": 0.155,
-    "Electrode width [m]": 0.208,
-    "Positive tab width [m]": 0.1664,
-    "Negative tab width [m]": 0.1664,
-    "Negative tab centre y-coordinate [m]": 0.104,
+    "Electrode width [m]": e_width,
+    "Positive tab width [m]": 0.8 * e_width,
+    "Negative tab width [m]": 0.8 * e_width,
+    "Negative tab centre y-coordinate [m]": 0.5 * e_width,
     "Negative tab centre z-coordinate [m]": 0.155,
-    "Positive tab centre y-coordinate [m]": 0.104,
+    "Positive tab centre y-coordinate [m]": 0.5 * e_width,
     "Positive tab centre z-coordinate [m]": 0,
     "Upper voltage cut-off [V]": 4.5,
     "Lower voltage cut-off [V]": 2.7,
@@ -76,19 +83,19 @@ var_pts = {
     var.x_p: 5,
     var.r_n: 5,
     var.r_p: 5,
-    var.y: 5,
-    var.z: 5,
+    var.y: 10,
+    var.z: 10,
 }
 
 
 if load is True:
     sim = pb.load(filename)
 elif load is False:
-    sim = pb.Simulation(model, parameter_values=parameter_values, var_pts=var_pts,)
+    sim = pb.Simulation(model, parameter_values=parameter_values, var_pts=var_pts)
     if c_rate == 1:
         t_eval = np.linspace(0, 3600, 100)
     elif c_rate == 5:
-        t_eval = np.linspace(0, 3600 / 5, 100)
+        t_eval = np.linspace(0, 3600 / 7, 100)
 
     sim.solve(t_eval=t_eval)
     sim.save(filename)
@@ -97,19 +104,24 @@ elif load is False:
 quick_plot_variables = [
     # "Time [h]",
     # "Discharge capacity [A.h]",
-    "X-averaged negative particle surface concentration",
-    "X-averaged positive particle surface concentration",
-    "X-averaged cell temperature [K]",
-    "Current collector current density [A.m-2]",
+    # "X-averaged negative particle surface concentration",
+    # "X-averaged positive particle surface concentration",
+    # "X-averaged cell temperature [K]",
+    # "Current collector current density [A.m-2]",
+    "Cell temperature [K]",
     [
         "Volume-averaged Ohmic heating [W.m-3]",
+        "Volume-averaged electrolyte Ohmic heating [W.m-3]",
         "Volume-averaged irreversible electrochemical heating [W.m-3]",
-        "Volume-averaged reversible heating [W.m-3]",
     ],
+    # ["Irreversible electrochemical heating [W.m-3]", "Ohmic heating [W.m-3]"],
     "Volume-averaged total heating [W.m-3]",
     "Volume-averaged cell temperature [K]",
     "Terminal voltage [V]",
+    # "X-averaged negative electrode reaction overpotential [V]",
+    # "X-averaged positive electrode reaction overpotential [V]",
 ]
+
 
 sim.plot(quick_plot_vars=quick_plot_variables)
 

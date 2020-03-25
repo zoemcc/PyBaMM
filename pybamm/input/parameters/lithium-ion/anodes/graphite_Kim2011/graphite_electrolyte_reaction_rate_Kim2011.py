@@ -37,10 +37,8 @@ def graphite_electrolyte_reaction_rate_Kim2011(T, T_inf, E_r, R_g):
     c_e_ref = 1.2 * 10 ** 3  # reference electrolyte concentration
     alpha = 0.5  # charge transfer coefficient
 
-    m_ref = (
-        2
-        * i0_ref
-        / (c_e_ref ** alpha * (c_s_n_max - c_s_n_ref) ** alpha * c_s_n_ref ** alpha)
+    m_ref = i0_ref / (
+        c_e_ref ** alpha * (c_s_n_max - c_s_n_ref) ** alpha * c_s_n_ref ** alpha
     )
 
     arrhenius = exp(E_r / R_g * (1 / T_inf - 1 / T))
