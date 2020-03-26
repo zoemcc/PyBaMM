@@ -78,6 +78,8 @@ class Full(BaseModel):
             * (-pybamm.div(N_e) / param.C_e + source_terms - c_e * deps_dt)
         }
 
+        # self.rhs = {c_e: 0 * c_e}
+
     def set_initial_conditions(self, variables):
 
         c_e = variables["Electrolyte concentration"]

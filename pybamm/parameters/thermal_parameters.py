@@ -94,6 +94,7 @@ rho_k = pybamm.Concatenation(
     pybamm.FullBroadcast(rho_p, ["positive electrode"], "current collector"),
 )
 
+
 lambda_cn = lambda_cn_dim / lambda_eff_dim
 lambda_n = lambda_n_dim / lambda_eff_dim
 lambda_s = lambda_s_dim / lambda_eff_dim

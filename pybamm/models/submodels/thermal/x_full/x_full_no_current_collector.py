@@ -28,7 +28,7 @@ class NoCurrentCollector(BaseModel):
 
         self.rhs = {
             T: (-pybamm.div(q) / self.param.delta ** 2 + self.param.B * Q)
-            / (self.param.C_th * self.param.rho_k)
+            / (self.param.C_th)
         }
 
     def set_boundary_conditions(self, variables):

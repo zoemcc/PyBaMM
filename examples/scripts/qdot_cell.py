@@ -2,16 +2,20 @@ import pybamm as pb
 import numpy as np
 
 pb.set_logging_level("INFO")
+# pb.settings.debug_mode = True
 
 c_rate = 5
 load = False
 
-filename = "qdot_cell_charge" + str(c_rate) + "C.p"
+filename = "qdot_cell_charge_with_electrolyte_1D" + str(c_rate) + "C.p"
 
 options = {
-    "current collector": "potential pair",
-    "dimensionality": 1,
+    # "current collector": "potential pair",
+    # "dimensionality": 2,
     "thermal": "x-lumped",
+    # "thermal": "x-full",
+    # "thermal current collector": True,
+    # "particle": "fast diffusion"
 }
 # options = {}
 model = pb.lithium_ion.DFN(options)
@@ -65,7 +69,7 @@ qdot_set = {
     "Positive tab centre z-coordinate [m]": 0,
     "Upper voltage cut-off [V]": 4.5,
     "Lower voltage cut-off [V]": 2.7,
-    "Heat transfer coefficient [W.m-2.K-1]": 0,  # 0.260,
+    "Heat transfer coefficient [W.m-2.K-1]": 0.00001,
     "Initial concentration in negative electrode [mol.m-3]": sto_n0 * 2.84e4,
     "Initial concentration in positive electrode [mol.m-3]": sto_p0 * 4.9e4,
     "Current function [A]": one_c_current * c_rate,
@@ -83,15 +87,15 @@ var_pts = {
     var.x_p: 5,
     var.r_n: 5,
     var.r_p: 5,
-    var.y: 10,
-    var.z: 10,
+    var.y: 5,
+    var.z: 5,
 }
 
 
 if load is True:
     sim = pb.load(filename)
 elif load is False:
-    sim = pb.Simulation(model, parameter_values=parameter_values, var_pts=var_pts)
+    sim = pb.Simulation(model, parameter_values=parameter_values)  # , var_pts=var_pts)
     if c_rate == 1:
         t_eval = np.linspace(0, 3600, 100)
     elif c_rate == 5:
@@ -106,18 +110,25 @@ quick_plot_variables = [
     # "Discharge capacity [A.h]",
     # "X-averaged negative particle surface concentration",
     # "X-averaged positive particle surface concentration",
-    # "X-averaged cell temperature [K]",
+    "Negative particle surface concentration",
+    "Positive particle surface concentration",
+    "Electrolyte concentration [mol.m-3]",
+    "X-averaged cell temperature [C]",
+    # "Cell temperature [K]",
     # "Current collector current density [A.m-2]",
-    "Cell temperature [K]",
+    # "Cell temperature [K]",
     [
+        "Volume-averaged total heating [W.m-3]",
         "Volume-averaged Ohmic heating [W.m-3]",
-        "Volume-averaged electrolyte Ohmic heating [W.m-3]",
+        # "Volume-averaged electrolyte Ohmic heating [W.m-3]",
         "Volume-averaged irreversible electrochemical heating [W.m-3]",
     ],
     # ["Irreversible electrochemical heating [W.m-3]", "Ohmic heating [W.m-3]"],
-    "Volume-averaged total heating [W.m-3]",
-    "Volume-averaged cell temperature [K]",
+    "Volume-averaged cell temperature [C]",
+    # "Volume-averaged cell temperature [K]",
     "Terminal voltage [V]",
+    # "X-averaged negative electrolyte concentration [mol.m-3]",
+    # "X-averaged positive electrolyte concentration [mol.m-3]",
     # "X-averaged negative electrode reaction overpotential [V]",
     # "X-averaged positive electrode reaction overpotential [V]",
 ]

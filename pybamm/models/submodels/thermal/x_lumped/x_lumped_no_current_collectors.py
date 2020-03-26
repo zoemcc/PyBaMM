@@ -30,12 +30,12 @@ class NoCurrentCollector(BaseModel):
         T_amb = variables["Ambient temperature"]
 
         # Get effective properties
-        rho_eff, _ = self._effective_properties()
+        rho_eff, lambda_eff = self._effective_properties()
         cooling_coeff = self._surface_cooling_coefficient()
 
         self.rhs = {
             T_av: (self.param.B * Q_av + cooling_coeff * (T_av - T_amb))
-            / (self.param.C_th * rho_eff)
+            / (self.param.C_th)
         }
 
     def _current_collector_heating(self, variables):
@@ -73,9 +73,9 @@ class NoCurrentCollector(BaseModel):
         effective thermal conductivity, respectively. This overwrites the default
         behaviour of 'base_thermal'.
         """
-        l_n = self.param.l_n
-        l_s = self.param.l_s
-        l_p = self.param.l_p
+        l_n = self.param.L_n
+        l_s = self.param.L_s
+        l_p = self.param.L_p
         rho_n = self.param.rho_n
         rho_s = self.param.rho_s
         rho_p = self.param.rho_p

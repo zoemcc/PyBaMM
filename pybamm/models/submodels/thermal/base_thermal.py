@@ -62,9 +62,15 @@ class BaseThermal(pybamm.BaseSubModel):
             "Cell temperature [K]": param.Delta_T * T + param.T_ref,
             "X-averaged cell temperature": T_x_av,
             "X-averaged cell temperature [K]": param.Delta_T * T_x_av + param.T_ref,
+            "X-averaged cell temperature [C]": param.Delta_T * T_x_av
+            + param.T_ref
+            - 273.15,
             "Volume-averaged cell temperature": T_vol_av,
             "Volume-averaged cell temperature [K]": param.Delta_T * T_vol_av
             + param.T_ref,
+            "Volume-averaged cell temperature [C]": param.Delta_T * T_vol_av
+            + param.T_ref
+            - 273.15,
             "Heat flux": q,
             "Heat flux [W.m-2]": q,
             "Ambient temperature [K]": T_amb_dim,
