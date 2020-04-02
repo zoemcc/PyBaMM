@@ -3,7 +3,7 @@ from pybamm import exp, tanh
 
 def graphite_ocp_Ecker2015_function(sto):
     """
-    Graphite OCP as a function of stochiometry [1, 2].
+    Graphite OCP as a function of stochiometry [1, 2, 3].
 
     References
     ----------
@@ -13,9 +13,20 @@ def graphite_ocp_Ecker2015_function(sto):
     .. [2] Ecker, Madeleine, et al. "Parameterization of a physico-chemical model of
     a lithium-ion battery ii. model validation." Journal of The Electrochemical
     Society 162.9 (2015): A1849-A1857.
-       ----------
-       .. [1] http://www.cchem.berkeley.edu/jsngrp/fortran.html
-       """
+    .. [3] Richardson, Giles, et. al. "Generalised single particle models for
+    high-rate operation of graded lithium-ion electrodes: Systematic derivation
+    and validation." Electrochemica Acta 339 (2020): 135862
+
+    Parameters
+    ----------
+    sto: :class: `numpy.Array`
+        Electrode stochiometry
+
+    Returns
+    -------
+    : double
+        Open circuit potential
+    """
 
     # Graphite Anode from Ecker, Kabitz, Laresgoiti et al.
     # Analytical fit (WebPlotDigitizer + gnuplot)

@@ -63,28 +63,16 @@ class Full(BaseModel):
         deps_dt = variables["Porosity change"]
         c_e = variables["Electrolyte concentration"]
         N_e = variables["Electrolyte flux"]
-        # i_e = variables["Electrolyte current density"]
+        c_e_n = variables["Negative electrolyte concentration"]
+        c_e_p = variables["Positive electrolyte concentration"]
 
-        # source_term = ((param.s - param.t_plus) / param.gamma_e) * pybamm.div(i_e)
-        # source_term = pybamm.div(i_e) / param.gamma_e  # lithium-ion
-        if self.const_diff:
-            # Note: only correct for single (main) reaction
-            i_e_n = variables["Negative electrolyte current density"]
-            i_e_p = variables["Positive electrolyte current density"]
-            source_terms = pybamm.Concatenation(
-                (1 - param.t_plus) * i_e_n / param.l_n,
+        source_terms = sum(
+            pybamm.Concatenation(
+                (reaction["Negative"]["s"] - param.t_plus(c_e_n))
+                * variables[reaction["Negative"]["aj"]],
                 pybamm.FullBroadcast(0, "separator", "current collector"),
-                (1 - param.t_plus) * i_e_p / param.l_p,
-            )
-        else:
-            source_terms = sum(
-                pybamm.Concatenation(
-                    reaction["Negative"]["s"] * variables[reaction["Negative"]["aj"]],
-                    pybamm.FullBroadcast(0, "separator", "current collector"),
-                    reaction["Positive"]["s"] * variables[reaction["Positive"]["aj"]],
-                )
-                / param.gamma_e
-                for reaction in self.reactions.values()
+                (reaction["Positive"]["s"] - param.t_plus(c_e_p))
+                * variables[reaction["Positive"]["aj"]],
             )
 
         self.rhs = {

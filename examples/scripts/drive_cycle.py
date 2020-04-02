@@ -1,9 +1,23 @@
 import pybamm
 
 pybamm.set_logging_level("INFO")
-model = pybamm.lithium_ion.DFN()
-param = pybamm.ParameterValues(chemistry=pybamm.parameter_sets.Ecker2015)
+
+# load model and update parameters so the input current is the US06 drive cycle
+model = pybamm.lithium_ion.SPMe({"thermal": "x-lumped"})
+param = model.default_parameter_values
 param["Current function [A]"] = "[current data]US06"
 sim = pybamm.Simulation(model, parameter_values=param, solver=pybamm.IDAKLUSolver())
 sim.solve()
-sim.plot()
+sim.plot(
+    [
+        "Negative particle surface concentration [mol.m-3]",
+        "Electrolyte concentration [mol.m-3]",
+        "Positive particle surface concentration [mol.m-3]",
+        "Current [A]",
+        "Negative electrode potential [V]",
+        "Electrolyte potential [V]",
+        "Positive electrode potential [V]",
+        "Terminal voltage [V]",
+        "X-averaged cell temperature",
+    ]
+)

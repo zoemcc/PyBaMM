@@ -14,6 +14,9 @@ def graphite_electrolyte_reaction_rate_Ecker2015(T, T_inf, E_r, R_g):
     .. [2] Ecker, Madeleine, et al. "Parameterization of a physico-chemical model of
     a lithium-ion battery ii. model validation." Journal of The Electrochemical
     Society 162.9 (2015): A1849-A1857.
+    .. [3] Richardson, Giles, et. al. "Generalised single particle models for
+    high-rate operation of graded lithium-ion electrodes: Systematic derivation
+    and validation." Electrochemica Acta 339 (2020): 135862
 
     Parameters
     ----------
@@ -32,9 +35,12 @@ def graphite_electrolyte_reaction_rate_Ecker2015(T, T_inf, E_r, R_g):
         Reaction rate
     """
 
-    F = 96487
     k_ref = 1.995 * 1e-10
+
+    # multiply by Faraday's constant to get correct units
+    F = constants.physical_constants["Faraday constant"][0]
     m_ref = F * k_ref
-    arrhenius = exp(-E_r / (R_g * T)) * exp(E_r / (R_g * 296))
+
+    arrhenius = exp(-E_r / (R_g * T)) * exp(E_r / (R_g * T_inf))
 
     return m_ref * arrhenius

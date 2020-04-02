@@ -3,7 +3,7 @@ from pybamm import tanh
 
 def nco_ocp_Ecker2015_function(sto):
     """
-    NCO OCP as a function of stochiometry [1, 2].
+    NCO OCP as a function of stochiometry [1, 2, 3].
 
     References
     ----------
@@ -13,6 +13,9 @@ def nco_ocp_Ecker2015_function(sto):
     .. [2] Ecker, Madeleine, et al. "Parameterization of a physico-chemical model of
     a lithium-ion battery ii. model validation." Journal of The Electrochemical
     Society 162.9 (2015): A1849-A1857.
+    .. [3] Richardson, Giles, et. al. "Generalised single particle models for
+    high-rate operation of graded lithium-ion electrodes: Systematic derivation
+    and validation." Electrochemica Acta 339 (2020): 135862
 
     Parameters
     ----------

@@ -3,7 +3,7 @@ from pybamm import exp
 
 def nco_diffusivity_Ecker2015(sto, T, T_inf, E_D_s, R_g):
     """
-    NCO diffusivity as a function of stochiometry [1, 2].
+    NCO diffusivity as a function of stochiometry [1, 2, 3].
 
     References
     ----------
@@ -13,6 +13,9 @@ def nco_diffusivity_Ecker2015(sto, T, T_inf, E_D_s, R_g):
     .. [2] Ecker, Madeleine, et al. "Parameterization of a physico-chemical model of
     a lithium-ion battery ii. model validation." Journal of The Electrochemical
     Society 162.9 (2015): A1849-A1857.
+    .. [3] Richardson, Giles, et. al. "Generalised single particle models for
+    high-rate operation of graded lithium-ion electrodes: Systematic derivation
+    and validation." Electrochemica Acta 339 (2020): 135862
 
     Parameters
     ----------
@@ -33,8 +36,7 @@ def nco_diffusivity_Ecker2015(sto, T, T_inf, E_D_s, R_g):
         Solid diffusivity
     """
 
-    # D_ref = FunctionParameter("Measured positive electrode diffusivity [m2.s-1]", sto)
     D_ref = 3.7e-13 - 3.4e-13 * exp(-12 * (sto - 0.62) * (sto - 0.62))
-    arrhenius = exp(-E_D_s / (R_g * T)) * exp(E_D_s / (R_g * 296))
+    arrhenius = exp(-E_D_s / (R_g * T)) * exp(E_D_s / (R_g * T_inf))
 
     return D_ref * arrhenius
