@@ -74,6 +74,9 @@ class Full(BaseModel):
                 (reaction["Positive"]["s"] - param.t_plus(c_e_p))
                 * variables[reaction["Positive"]["aj"]],
             )
+            / param.gamma_e
+            for reaction in self.reactions.values()
+        )
 
         self.rhs = {
             c_e: (1 / eps)

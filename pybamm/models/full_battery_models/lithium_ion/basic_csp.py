@@ -153,28 +153,31 @@ class BasicCSP(BaseModel):
         j_s_p = i_cell - i_e_p
 
         # Electrode potentials
-        phi_s_n = (
-            -pybamm.IndefiniteIntegral(j_s_n, pybamm.standard_spatial_vars.x_n)
-            / param.sigma_n
+        phi_s_n = -pybamm.IndefiniteIntegral(
+            j_s_n, pybamm.standard_spatial_vars.x_n
+        ) / (param.sigma_n)
+
+        # (need to do this as can't x_average on edge variables...)
+        x_p = pybamm.SpatialVariable(
+            "x_p", domain=["positive electrode"], coord_sys="cartesian",
         )
+        j_s_p_anal = i_cell - j_p * (x_p - param.l) / (param.l_p)
         # phi_s_p = int_x^L4  but write as int_L3^L4 - int_L3^x
         phi_s_p = (
-            pybamm.x_average(j_s_p) * param.l_p
+            pybamm.x_average(j_s_p_anal)
             - pybamm.IndefiniteIntegral(j_s_p, pybamm.standard_spatial_vars.x_p)
         ) / param.sigma_p
-
-        phi_s_p = pybamm.Scalar(0)
 
         # Negative ion flux (N.B they solve for N- but we normally solve for N+)
         N_e = (
             -tor * param.D_e(c_e, T) * pybamm.grad(c_e)
-            - (1 - param.t_plus) * i_e * param.C_e / param.gamma_e
+            - (1 - param.t_plus(c_e)) * i_e * param.C_e / param.gamma_e
         )
 
         eta_n = pybamm.x_average((2 / param.ne_n) * pybamm.arcsinh(j_n / (2 * j0_n)))
         eta_p = pybamm.x_average((2 / param.ne_p) * pybamm.arcsinh(j_p / (2 * j0_p)))
 
-        V_n = U_n + eta_n + pybamm.x_average(phi_e_n) + pybamm.x_average(phi_s_n)
+        V_n = U_n + eta_n + pybamm.x_average(phi_e_n) - pybamm.x_average(phi_s_n)
         V_p = U_p + eta_p + pybamm.x_average(phi_e_p) - pybamm.x_average(phi_s_p)
 
         V = V_p - V_n
@@ -261,6 +264,7 @@ class BasicCSP(BaseModel):
         self.variables = {
             "phi e ref": phi_e_ref,
             "Electrolyte concentration": c_e,
+            "Negative electrode potential": phi_s_n,
             "Negative electrode potential [V]": phi_s_n * param.potential_scale,
             "Positive electrode potential drop": phi_s_p * param.potential_scale
             + param.U_p_ref
@@ -270,6 +274,9 @@ class BasicCSP(BaseModel):
             "Negative electrolyte potential [V]": phi_e_n * param.potential_scale
             - param.U_n_ref,
             "Positive electrolyte potential [V]": phi_e_p * param.potential_scale
+            - param.U_n_ref,
+            "Positive electrode potential [V]": (phi_s_p + V) * param.potential_scale
+            + param.U_p_ref
             - param.U_n_ref,
             "Electrolyte current density": i_e,
             "Electrolyte potential [V]": phi_e * param.potential_scale - param.U_n_ref,
