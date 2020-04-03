@@ -89,6 +89,11 @@ linear_spme_errors = [None] * len(C_rates)
 nonlinear_spme_errors = [None] * len(C_rates)
 csp_errors = [None] * len(C_rates)
 
+spm_solve_times = [None] * len(C_rates)
+linear_spme_solve_times = [None] * len(C_rates)
+nonlinear_spme_solve_times = [None] * len(C_rates)
+csp_solve_times = [None] * len(C_rates)
+
 # Compute RMSE at each C-rate
 for i, C_rate in enumerate(C_rates):
     # The SPM of Richardson et. al. is just the OCV
@@ -109,12 +114,25 @@ for i, C_rate in enumerate(C_rates):
     nonlinear_spme_errors[i] = pybamm.rmse(dfn_voltage, nonlinear_spme_voltage) * 1e3
     csp_errors[i] = pybamm.rmse(dfn_voltage, csp_voltage) * 1e3
 
+    spm_solve_times[i] = round(solutions["SPM"][i].solve_time * 1000)
+    linear_spme_solve_times[i] = round(solutions["SPMe (linear)"][i].solve_time * 1000)
+    nonlinear_spme_solve_times[i] = round(solutions["SPMe (nonlinear)"][i].solve_time * 1000)
+    csp_solve_times[i] = round(solutions["cSP"][i].solve_time * 1000)
+
+
 # print table -- could be prettier...
 print("RMSE(mV) at 1C, 2.5C, 5C and 7.5C")
 print("SPM", spm_errors)
 print("SPMe (linear)", linear_spme_errors)
 print("SPMe (nonlinear)", nonlinear_spme_errors)
 print("cSP", csp_errors)
+
+print("Solve times (ms) at 1C, 2.5C, 5C and 7.5C")
+print("SPM", spm_solve_times)
+print("SPMe (linear)", linear_spme_solve_times)
+print("SPMe (nonlinear)", nonlinear_spme_solve_times)
+print("cSP", csp_solve_times)
+
 
 # Plots -----------------------------------------------------------------------
 print("Generating plots")
