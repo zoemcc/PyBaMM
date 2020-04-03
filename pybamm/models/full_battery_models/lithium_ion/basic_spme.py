@@ -151,7 +151,7 @@ class BasicSPMe(BaseModel):
             pybamm.PrimaryBroadcast(j_p, "positive electrode"),
         )
         self.rhs[c_e] = (1 / eps) * (
-            -pybamm.div(N_e) / param.C_e + (1 - param.t_plus) * j / param.gamma_e
+            -pybamm.div(N_e) / param.C_e + (1 - param.t_plus(c_e)) * j / param.gamma_e
         )
         self.boundary_conditions[c_e] = {
             "left": (pybamm.Scalar(0), "Neumann"),
@@ -185,7 +185,9 @@ class BasicSPMe(BaseModel):
         eta_p = (2 / param.ne_p) * pybamm.arcsinh(j_p / (2 * j0_p))
         eta_r = eta_p - eta_n
         eta_c = (
-            2 * (1 - param.t_plus) * (pybamm.x_average(c_e_p) - pybamm.x_average(c_e_n))
+            2
+            * (1 - param.t_plus(pybamm.x_average(c_e)))
+            * (pybamm.x_average(c_e_p) - pybamm.x_average(c_e_n))
         )
         delta_phi_e_av = -(
             param.C_e * i_cell / (param.gamma_e * param.kappa_e(1, T))

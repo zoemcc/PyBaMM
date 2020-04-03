@@ -109,13 +109,11 @@ class SPMe(BaseModel):
 
     def set_electrolyte_submodel(self):
 
-        electrolyte = pybamm.electrolyte.stefan_maxwell
-
-        self.submodels["electrolyte conductivity"] = electrolyte.conductivity.Composite(
-            self.param
-        )
-        self.submodels["electrolyte diffusion"] = electrolyte.diffusion.Full(
-            self.param, self.reactions, const_diff=False
+        self.submodels[
+            "electrolyte conductivity"
+        ] = pybamm.electrolyte_conductivity.Composite(self.param)
+        self.submodels["electrolyte diffusion"] = pybamm.electrolyte_diffusion.Full(
+            self.param, self.reactions
         )
 
     @property

@@ -1,40 +1,30 @@
 import pybamm
+import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+# change working directory to the root of pybamm
+os.chdir(pybamm.root_dir())
+
 # set style
-# matplotlib.rc_file("_matplotlibrc", use_default_template=True)
+matplotlib.rc_file("examples/scripts/_matplotlibrc", use_default_template=True)
 
 # Models ----------------------------------------------------------------------
 print("Setting up models")
 
-# set up models (we will update the parameters later so that the diffusivity is
-# constant in the linear model)
+# set up models
 models = {
     "SPM": pybamm.lithium_ion.SPM(),
-    "SPMe (linear)": pybamm.lithium_ion.SPMe(),
-    "SPMe (nonlinear)": pybamm.lithium_ion.SPMe(),
+    "SPMe (linear)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=True),
+    "SPMe (nonlinear)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=False),
+    "cSP": pybamm.lithium_ion.BasicCSP(),
     "DFN": pybamm.lithium_ion.DFN(),
 }
 
 # pick parameters, keeping C-rate as an input to be changed for each solve
 parameter_values = pybamm.ParameterValues(chemistry=pybamm.parameter_sets.Ecker2015)
 parameter_values.update({"C-rate": "[input]"})
-
-# for the linear SPMe we use the same parameters, but with constant diffusivity
-# in the electrolyte
-c_e_typ = parameter_values["Typical electrolyte concentration [mol.m-3]"]
-T_inf = parameter_values["Ambient temperature [K]"]
-D_e_const = parameter_values.evaluate(
-    pybamm.standard_parameters_lithium_ion.D_e_dimensional(c_e_typ, T_inf)
-)
-linear_parameter_values = pybamm.ParameterValues(
-    chemistry=pybamm.parameter_sets.Ecker2015
-)
-linear_parameter_values.update(
-    {"C-rate": "[input]", "Electrolyte diffusivity [m2.s-1]": D_e_const}
-)
 
 # set up number of points for discretisation
 var = pybamm.standard_spatial_vars
@@ -49,11 +39,9 @@ var_pts = {
 # set up simulations
 sims = {}
 for name, model in models.items():
-    if name == "SPMe (linear)":
-        params = linear_parameter_values
-    else:
-        params = parameter_values
-    sims[name] = pybamm.Simulation(model, parameter_values=params, var_pts=var_pts)
+    sims[name] = pybamm.Simulation(
+        model, parameter_values=parameter_values, var_pts=var_pts
+    )
 
 # pick C_rates and times to integrate over
 C_rates = [1, 2.5, 5, 7.5]
@@ -69,6 +57,7 @@ solutions = {
     "SPM": [None] * len(C_rates),
     "SPMe (linear)": [None] * len(C_rates),
     "SPMe (nonlinear)": [None] * len(C_rates),
+    "cSP": [None] * len(C_rates),
     "DFN": [None] * len(C_rates),
 }
 
@@ -98,6 +87,7 @@ print("Generating table")
 spm_errors = [None] * len(C_rates)
 linear_spme_errors = [None] * len(C_rates)
 nonlinear_spme_errors = [None] * len(C_rates)
+csp_errors = [None] * len(C_rates)
 
 # Compute RMSE at each C-rate
 for i, C_rate in enumerate(C_rates):
@@ -111,17 +101,20 @@ for i, C_rate in enumerate(C_rates):
     nonlinear_spme_voltage = solutions["SPMe (nonlinear)"][i]["Terminal voltage [V]"](
         solutions["SPMe (nonlinear)"][i].t
     )
+    csp_voltage = solutions["cSP"][i]["Terminal voltage [V]"](solutions["cSP"][i].t)
     dfn_voltage = solutions["DFN"][i]["Terminal voltage [V]"](solutions["DFN"][i].t)
 
     spm_errors[i] = pybamm.rmse(dfn_voltage, spm_voltage) * 1e3
     linear_spme_errors[i] = pybamm.rmse(dfn_voltage, linear_spme_voltage) * 1e3
     nonlinear_spme_errors[i] = pybamm.rmse(dfn_voltage, nonlinear_spme_voltage) * 1e3
+    csp_errors[i] = pybamm.rmse(dfn_voltage, csp_voltage) * 1e3
 
 # print table -- could be prettier...
 print("RMSE(mV) at 1C, 2.5C, 5C and 7.5C")
 print("SPM", spm_errors)
 print("SPMe (linear)", linear_spme_errors)
 print("SPMe (nonlinear)", nonlinear_spme_errors)
+print("cSP", csp_errors)
 
 # Plots -----------------------------------------------------------------------
 print("Generating plots")
@@ -129,10 +122,10 @@ print("Generating plots")
 # plot -- could probably be generated more efficiently...
 fig, ax = plt.subplots(2, 2, figsize=(6.4, 6))
 fig.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5)
-linestyles = ["solid", "dashed", "dashdot", "solid"]
-colors = ["blue", "green", "red", "black"]
-markers = [None, "s", "o", None]
-markeverys = [50, 40, 50, 50]
+linestyles = ["solid", "dashed", "dashdot", "dashed", "solid"]
+colors = ["blue", "green", "purple", "red", "black"]
+markers = [None, "s", "o", "x", None]
+markeverys = [50, 40, 50, 70, 50]
 V_major_ticks = np.arange(2.4, 4.2, 0.2)
 V_minor_ticks = np.arange(2.5, 4.1, 0.2)
 
