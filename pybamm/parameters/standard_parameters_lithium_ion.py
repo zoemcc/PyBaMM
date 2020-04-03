@@ -22,10 +22,8 @@ from scipy import constants
 "1. Dimensional Parameters"
 
 # Physical constants
-R = pybamm.Scalar(8.3144)  # pybamm.Scalar(constants.R)
-F = pybamm.Scalar(
-    96487
-)  # pybamm.Scalar(constants.physical_constants["Faraday constant"][0])
+R = pybamm.Scalar(constants.R)
+F = pybamm.Scalar(constants.physical_constants["Faraday constant"][0])
 T_ref = pybamm.Parameter("Reference temperature [K]")
 
 # Macroscale geometry
@@ -272,7 +270,7 @@ m_p_ref_dimensional = m_p_dimensional(T_ref)
 # concentration
 electrolyte_concentration_scale = c_e_typ
 negative_particle_concentration_scale = c_n_max
-positive_particle_concentration_scale = c_p_max
+positive_particle_concentration_scale = c_n_max
 
 # electrical
 potential_scale = R * T_ref / F
