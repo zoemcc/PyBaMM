@@ -154,6 +154,9 @@ class BasicSPM(BaseModel):
         phi_s_p = eta_p + phi_e + param.U_p(c_s_surf_p, T)
         V = phi_s_p
 
+        U_eq = param.U_p(c_s_surf_p, T) - param.U_n(c_s_surf_n, T)
+        U_eq_dim = U_eq * param.potential_scale + param.U_p_ref - param.U_n_ref
+
         whole_cell = ["negative electrode", "separator", "positive electrode"]
         # The `variables` dictionary contains all variables that might be useful for
         # visualising the solution of the model
@@ -175,6 +178,7 @@ class BasicSPM(BaseModel):
             "Positive electrode potential": pybamm.PrimaryBroadcast(
                 phi_s_p, "positive electrode"
             ),
+            "Measured open circuit voltage [V]": U_eq_dim,
             "Terminal voltage": V,
             "Terminal voltage [V]": param.U_p_ref
             - param.U_n_ref

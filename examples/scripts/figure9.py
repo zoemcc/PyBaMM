@@ -15,11 +15,13 @@ print("Setting up models")
 
 # set up models
 models = {
-    "SPM": pybamm.lithium_ion.SPM(),
-    "SPMe (linear)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=True),
-    "SPMe (nonlinear)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=False),
+    "SPM": pybamm.lithium_ion.BasicSPM(),
+    "SPMe (LD)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=True),
+    "SPMe (ND)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=False, use_log=False),
+    "SPMe (ND+L)": pybamm.lithium_ion.BasicSPMe(linear_diffusion=False, use_log=True),
+    # "SPMe (nonlinear)": pybamm.lithium_ion.SPMe(),
     "cSP": pybamm.lithium_ion.BasicCSP(),
-    "DFN": pybamm.lithium_ion.DFN(),
+    "DFN": pybamm.lithium_ion.BasicDFN(),
 }
 
 # pick parameters, keeping C-rate as an input to be changed for each solve
@@ -55,8 +57,9 @@ t_evals = [
 # loop over C-rates
 solutions = {
     "SPM": [None] * len(C_rates),
-    "SPMe (linear)": [None] * len(C_rates),
-    "SPMe (nonlinear)": [None] * len(C_rates),
+    "SPMe (LD)": [None] * len(C_rates),
+    "SPMe (ND)": [None] * len(C_rates),
+    "SPMe (ND+L)": [None] * len(C_rates),
     "cSP": [None] * len(C_rates),
     "DFN": [None] * len(C_rates),
 }
@@ -85,13 +88,15 @@ print("Finished")
 print("Generating table")
 
 spm_errors = [None] * len(C_rates)
-linear_spme_errors = [None] * len(C_rates)
-nonlinear_spme_errors = [None] * len(C_rates)
+spme_LD_errors = [None] * len(C_rates)
+spme_ND_errors = [None] * len(C_rates)
+spme_NDL_errors = [None] * len(C_rates)
 csp_errors = [None] * len(C_rates)
 
 spm_solve_times = [None] * len(C_rates)
-linear_spme_solve_times = [None] * len(C_rates)
-nonlinear_spme_solve_times = [None] * len(C_rates)
+spme_LD_solve_times = [None] * len(C_rates)
+spme_ND_solve_times = [None] * len(C_rates)
+spme_NDL_solve_times = [None] * len(C_rates)
 csp_solve_times = [None] * len(C_rates)
 
 # Compute RMSE at each C-rate
@@ -100,37 +105,44 @@ for i, C_rate in enumerate(C_rates):
     spm_voltage = solutions["SPM"][i]["Measured open circuit voltage [V]"](
         solutions["SPM"][i].t
     )
-    linear_spme_voltage = solutions["SPMe (linear)"][i]["Terminal voltage [V]"](
-        solutions["SPMe (linear)"][i].t
+    spme_LD_voltage = solutions["SPMe (LD)"][i]["Terminal voltage [V]"](
+        solutions["SPMe (LD)"][i].t
     )
-    nonlinear_spme_voltage = solutions["SPMe (nonlinear)"][i]["Terminal voltage [V]"](
-        solutions["SPMe (nonlinear)"][i].t
+    spme_ND_voltage = solutions["SPMe (ND)"][i]["Terminal voltage [V]"](
+        solutions["SPMe (ND)"][i].t
+    )
+    spme_NDL_voltage = solutions["SPMe (ND+L)"][i]["Terminal voltage [V]"](
+        solutions["SPMe (ND+L)"][i].t
     )
     csp_voltage = solutions["cSP"][i]["Terminal voltage [V]"](solutions["cSP"][i].t)
     dfn_voltage = solutions["DFN"][i]["Terminal voltage [V]"](solutions["DFN"][i].t)
 
     spm_errors[i] = pybamm.rmse(dfn_voltage, spm_voltage) * 1e3
-    linear_spme_errors[i] = pybamm.rmse(dfn_voltage, linear_spme_voltage) * 1e3
-    nonlinear_spme_errors[i] = pybamm.rmse(dfn_voltage, nonlinear_spme_voltage) * 1e3
+    spme_LD_errors[i] = pybamm.rmse(dfn_voltage, spme_LD_voltage) * 1e3
+    spme_ND_errors[i] = pybamm.rmse(dfn_voltage, spme_ND_voltage) * 1e3
+    spme_NDL_errors[i] = pybamm.rmse(dfn_voltage, spme_NDL_voltage) * 1e3
     csp_errors[i] = pybamm.rmse(dfn_voltage, csp_voltage) * 1e3
 
     spm_solve_times[i] = round(solutions["SPM"][i].solve_time * 1000)
-    linear_spme_solve_times[i] = round(solutions["SPMe (linear)"][i].solve_time * 1000)
-    nonlinear_spme_solve_times[i] = round(solutions["SPMe (nonlinear)"][i].solve_time * 1000)
+    spme_LD_solve_times[i] = round(solutions["SPMe (LD)"][i].solve_time * 1000)
+    spme_ND_solve_times[i] = round(solutions["SPMe (ND)"][i].solve_time * 1000)
+    spme_NDL_solve_times[i] = round(solutions["SPMe (ND+L)"][i].solve_time * 1000)
     csp_solve_times[i] = round(solutions["cSP"][i].solve_time * 1000)
 
 
 # print table -- could be prettier...
 print("RMSE(mV) at 1C, 2.5C, 5C and 7.5C")
 print("SPM", spm_errors)
-print("SPMe (linear)", linear_spme_errors)
-print("SPMe (nonlinear)", nonlinear_spme_errors)
+print("SPMe (LD)", spme_LD_errors)
+print("SPMe (ND)", spme_ND_errors)
+print("SPMe (ND+L)", spme_NDL_errors)
 print("cSP", csp_errors)
 
 print("Solve times (ms) at 1C, 2.5C, 5C and 7.5C")
 print("SPM", spm_solve_times)
-print("SPMe (linear)", linear_spme_solve_times)
-print("SPMe (nonlinear)", nonlinear_spme_solve_times)
+print("SPMe (LD)", spme_LD_solve_times)
+print("SPMe (ND)", spme_ND_solve_times)
+print("SPMe (ND+L)", spme_NDL_solve_times)
 print("cSP", csp_solve_times)
 
 
@@ -140,29 +152,51 @@ print("Generating plots")
 # plot -- could probably be generated more efficiently...
 fig, ax = plt.subplots(2, 2, figsize=(6.4, 6))
 fig.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5)
-linestyles = ["solid", "dashed", "dashdot", "dashed", "solid"]
-colors = ["blue", "green", "purple", "red", "black"]
+linestyles = {
+    "SPM": "-",
+    "DFN": "-",
+    "cSP": "--",
+    "SPMe (LD)": "--",
+    "SPMe (ND)": ":",
+    "SPMe (ND+L)": ":",
+}
+
+colors = {
+    "SPM": "blue",
+    "DFN": "black",
+    "cSP": "red",
+    "SPMe (LD)": "green",
+    "SPMe (ND)": "purple",
+    "SPMe (ND+L)": (0.99, 0.43, 0.1),
+}
+
+255, 110, 25
+
 markers = [None, "s", "o", "x", None]
 markeverys = [50, 40, 50, 70, 50]
 V_major_ticks = np.arange(2.4, 4.2, 0.2)
 V_minor_ticks = np.arange(2.5, 4.1, 0.2)
 
+models_to_plot = ["DFN", "SPM", "cSP", "SPMe (LD)", "SPMe (ND)", "SPMe (ND+L)"]
+
 # 1C
-for i, key in enumerate(solutions.keys()):
-    t = solutions[key][0]["Time [s]"](solutions[key][0].t)
+for model in models_to_plot:
+    t = solutions[model][0]["Time [s]"](solutions[model][0].t)
     # The SPM of Richardson et. al. is just the OCV
-    if key == "SPM":
-        V = solutions[key][0]["Measured open circuit voltage [V]"](solutions[key][0].t)
+    if model == "SPM":
+        V = solutions[model][0]["Measured open circuit voltage [V]"](
+            solutions[model][0].t
+        )
     else:
-        V = solutions[key][0]["Terminal voltage [V]"](solutions[key][0].t)
+        V = solutions[model][0]["Terminal voltage [V]"](solutions[model][0].t)
     ax[0, 0].plot(
         t,
         V,
-        label=key,
-        linestyle=linestyles[i],
-        color=colors[i],
-        marker=markers[i],
-        markevery=markeverys[i],
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
         fillstyle="none",
     )
 ax[0, 0].set_xlabel("Time [s]")
@@ -180,23 +214,26 @@ ax[0, 0].legend(loc="lower left")
 ax[0, 0].title.set_text("1C")
 
 # 2.5C
-for i, key in enumerate(solutions.keys()):
-    t = solutions[key][1]["Time [s]"](solutions[key][1].t)
+for model in models_to_plot:
+    t = solutions[model][1]["Time [s]"](solutions[model][1].t)
     # The SPM of Richardson et. al. is just the OCV
-    if key == "SPM":
-        V = solutions[key][1]["Measured open circuit voltage [V]"](solutions[key][1].t)
+    if model == "SPM":
+        V = solutions[model][1]["Measured open circuit voltage [V]"](
+            solutions[model][1].t
+        )
     else:
-        V = solutions[key][1]["Terminal voltage [V]"](solutions[key][1].t)
+        V = solutions[model][1]["Terminal voltage [V]"](solutions[model][1].t)
     ax[0, 1].plot(
         t,
         V,
-        label=key,
-        linestyle=linestyles[i],
-        color=colors[i],
-        marker=markers[i],
-        markevery=markeverys[i],
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
         fillstyle="none",
     )
+
 ax[0, 1].set_xlabel("Time [s]")
 ax[0, 1].set_ylabel("Voltage [V]")
 ax[0, 1].set_xlim([0, 1600])
@@ -212,21 +249,23 @@ ax[0, 1].legend(loc="lower left")
 ax[0, 1].title.set_text("2.5C")
 
 # 5C
-for i, key in enumerate(solutions.keys()):
-    t = solutions[key][2]["Time [s]"](solutions[key][2].t)
+for model in models_to_plot:
+    t = solutions[model][2]["Time [s]"](solutions[model][2].t)
     # The SPM of Richardson et. al. is just the OCV
-    if key == "SPM":
-        V = solutions[key][2]["Measured open circuit voltage [V]"](solutions[key][2].t)
+    if model == "SPM":
+        V = solutions[model][2]["Measured open circuit voltage [V]"](
+            solutions[model][2].t
+        )
     else:
-        V = solutions[key][2]["Terminal voltage [V]"](solutions[key][2].t)
+        V = solutions[model][2]["Terminal voltage [V]"](solutions[model][2].t)
     ax[1, 0].plot(
         t,
         V,
-        label=key,
-        linestyle=linestyles[i],
-        color=colors[i],
-        marker=markers[i],
-        markevery=markeverys[i],
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
         fillstyle="none",
     )
 ax[1, 0].set_xlabel("Time [s]")
@@ -243,22 +282,24 @@ ax[1, 0].grid(which="major")
 ax[1, 0].legend(loc="lower left")
 ax[1, 0].title.set_text("5C")
 
-# 7.5C
-for i, key in enumerate(solutions.keys()):
-    t = solutions[key][3]["Time [s]"](solutions[key][3].t)
+# 5C
+for model in models_to_plot:
+    t = solutions[model][3]["Time [s]"](solutions[model][3].t)
     # The SPM of Richardson et. al. is just the OCV
-    if key == "SPM":
-        V = solutions[key][3]["Measured open circuit voltage [V]"](solutions[key][3].t)
+    if model == "SPM":
+        V = solutions[model][3]["Measured open circuit voltage [V]"](
+            solutions[model][3].t
+        )
     else:
-        V = solutions[key][3]["Terminal voltage [V]"](solutions[key][3].t)
+        V = solutions[model][3]["Terminal voltage [V]"](solutions[model][3].t)
     ax[1, 1].plot(
         t,
         V,
-        label=key,
-        linestyle=linestyles[i],
-        color=colors[i],
-        marker=markers[i],
-        markevery=markeverys[i],
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
         fillstyle="none",
     )
 ax[1, 1].set_xlabel("Time [s]")
@@ -276,4 +317,187 @@ ax[1, 1].legend(loc="lower left")
 ax[1, 1].title.set_text("7.5C")
 
 plt.savefig("ecker_c_rates.pdf", format="pdf", dpi=1000)
+plt.show()
+
+
+fig_err, ax_err = plt.subplots(2, 2, figsize=(6.4, 6))
+fig_err.subplots_adjust(
+    left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5
+)
+
+# removed "DFN" from here
+models_to_plot = ["SPM", "cSP", "SPMe (LD)", "SPMe (ND)", "SPMe (ND+L)"]
+# 1C
+true_voltage = solutions["DFN"][0]["Terminal voltage [V]"](solutions["DFN"][0].t)
+for model in models_to_plot:
+    t = solutions[model][0]["Time [s]"](solutions[model][0].t)
+    # The SPM of Richardson et. al. is just the OCV
+
+    # use the time points
+    if model == "SPM":
+        V = solutions[model][0]["Measured open circuit voltage [V]"](
+            solutions["DFN"][0].t
+        )
+    else:
+        V = solutions[model][0]["Terminal voltage [V]"](solutions["DFN"][0].t)
+
+    error = np.abs(V - true_voltage)
+
+    ax_err[0, 0].semilogy(
+        t,
+        error,
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
+        fillstyle="none",
+    )
+
+ax_err[0, 0].set_xlabel("Time [s]")
+ax_err[0, 0].set_ylabel("Absolute error [V]")
+ax_err[0, 0].set_xlim([0, 4000])
+ax_err[0, 0].set_ylim([1e-5, 1])
+# t_major_ticks = np.arange(0, 4000, 500)
+# t_minor_ticks = np.arange(250, 3750, 500)
+# ax_err[0, 0].set_xticks(t_major_ticks)
+# ax_err[0, 0].set_xticks(t_minor_ticks, minor=True)
+# ax_err[0, 0].set_yticks(V_major_ticks)
+# ax_err[0, 0].set_yticks(V_minor_ticks, minor=True)
+ax_err[0, 0].grid(which="major")
+ax_err[0, 0].legend(loc="upper left")
+ax_err[0, 0].title.set_text("1C")
+
+# 2.5C
+true_voltage = solutions["DFN"][1]["Terminal voltage [V]"](solutions["DFN"][1].t)
+for model in models_to_plot:
+    t = solutions[model][1]["Time [s]"](solutions[model][1].t)
+    # The SPM of Richardson et. al. is just the OCV
+
+    # use the time points
+    if model == "SPM":
+        V = solutions[model][1]["Measured open circuit voltage [V]"](
+            solutions["DFN"][1].t
+        )
+    else:
+        V = solutions[model][1]["Terminal voltage [V]"](solutions["DFN"][1].t)
+
+    error = np.abs(V - true_voltage)
+
+    ax_err[0, 1].semilogy(
+        t,
+        error,
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
+        fillstyle="none",
+    )
+
+ax_err[0, 1].set_xlabel("Time [s]")
+ax_err[0, 1].set_ylabel("Absolute error [V]")
+ax_err[0, 1].set_xlim([0, 1600])
+ax_err[0, 1].set_ylim([1e-5, 1])
+# t_major_ticks = np.arange(0, 4000, 500)
+# t_minor_ticks = np.arange(250, 3750, 500)
+# ax_err[0, 0].set_xticks(t_major_ticks)
+# ax_err[0, 0].set_xticks(t_minor_ticks, minor=True)
+# ax_err[0, 0].set_yticks(V_major_ticks)
+# ax_err[0, 0].set_yticks(V_minor_ticks, minor=True)
+ax_err[0, 1].grid(which="major")
+# ax_err[0, 0].legend(loc="lower left")
+ax_err[0, 1].title.set_text("2.5C")
+
+# 5C
+true_voltage = solutions["DFN"][2]["Terminal voltage [V]"](solutions["DFN"][2].t)
+for model in models_to_plot:
+    t = solutions[model][2]["Time [s]"](solutions[model][2].t)
+    # The SPM of Richardson et. al. is just the OCV
+
+    # use the time points
+    if model == "SPM":
+        V = solutions[model][2]["Measured open circuit voltage [V]"](
+            solutions["DFN"][2].t
+        )
+    else:
+        V = solutions[model][2]["Terminal voltage [V]"](solutions["DFN"][2].t)
+
+    error = np.abs(V - true_voltage)
+
+    ax_err[1, 0].semilogy(
+        t,
+        error,
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
+        fillstyle="none",
+    )
+
+ax_err[1, 0].set_xlabel("Time [s]")
+ax_err[1, 0].set_ylabel("Absolute error [V]")
+ax_err[1, 1].set_xlim([0, 500])
+ax_err[1, 0].set_ylim([1e-5, 1])
+# t_major_ticks = np.arange(0, 4000, 500)
+# t_minor_ticks = np.arange(250, 3750, 500)
+# ax_err[0, 0].set_xticks(t_major_ticks)
+# ax_err[0, 0].set_xticks(t_minor_ticks, minor=True)
+# ax_err[0, 0].set_yticks(V_major_ticks)
+# ax_err[0, 0].set_yticks(V_minor_ticks, minor=True)
+ax_err[1, 0].grid(which="major")
+# ax_err[0, 0].legend(loc="lower left")
+ax_err[1, 0].title.set_text("5C")
+
+# 7.5C
+true_voltage = solutions["DFN"][3]["Terminal voltage [V]"](solutions["DFN"][3].t)
+for model in models_to_plot:
+    t = solutions[model][3]["Time [s]"](solutions[model][3].t)
+    # The SPM of Richardson et. al. is just the OCV
+
+    # use the time points
+    if model == "SPM":
+        V = solutions[model][3]["Measured open circuit voltage [V]"](
+            solutions["DFN"][3].t
+        )
+    elif model != "SPMe (LD)":
+        V = solutions[model][3]["Terminal voltage [V]"](solutions["DFN"][3].t)
+
+    if model == "SPMe (LD)":
+        # in this case need to just use the spme (ld) solution time
+
+        V = solutions[model][3]["Terminal voltage [V]"](solutions["SPMe (LD)"][3].t)
+        tV = solutions["DFN"][3]["Terminal voltage [V]"](solutions["SPMe (LD)"][3].t)
+        error = np.abs(V - tV)
+
+    else:
+        error = np.abs(V - true_voltage)
+
+    ax_err[1, 1].semilogy(
+        t,
+        error,
+        label=model,
+        linestyle=linestyles[model],
+        color=colors[model],
+        # marker=markers[i],
+        # markevery=markeverys[i],
+        fillstyle="none",
+    )
+
+ax_err[1, 1].set_xlabel("Time [s]")
+ax_err[1, 1].set_ylabel("Absolute error [V]")
+ax_err[1, 1].set_xlim([0, 500])
+ax_err[1, 1].set_ylim([1e-5, 1])
+# t_major_ticks = np.arange(0, 4000, 500)
+# t_minor_ticks = np.arange(250, 3750, 500)
+# ax_err[0, 0].set_xticks(t_major_ticks)
+# ax_err[0, 0].set_xticks(t_minor_ticks, minor=True)
+# ax_err[0, 0].set_yticks(V_major_ticks)
+# ax_err[0, 0].set_yticks(V_minor_ticks, minor=True)
+ax_err[1, 1].grid(which="major")
+# ax_err[0, 0].legend(loc="lower left")
+ax_err[1, 1].title.set_text("7.5C")
+
+plt.savefig("ecker_c_rates_voltage_error.pdf", format="pdf", dpi=1000)
 plt.show()

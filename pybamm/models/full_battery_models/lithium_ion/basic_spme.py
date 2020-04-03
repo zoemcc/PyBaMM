@@ -32,7 +32,10 @@ class BasicSPMe(BaseModel):
     """
 
     def __init__(
-        self, name="Single Particle Model with electrolyte", linear_diffusion=True
+        self,
+        name="Single Particle Model with electrolyte",
+        linear_diffusion=True,
+        use_log=False,
     ):
         super().__init__({}, name)
         # `param` is a class containing all the relevant parameters and functions for
@@ -78,9 +81,15 @@ class BasicSPMe(BaseModel):
         j_p = -i_cell / param.l_p
 
         # Porosity
-        eps_n = param.epsilon_n
-        eps_s = param.epsilon_s
-        eps_p = param.epsilon_p
+        eps_n = pybamm.PrimaryBroadcast(
+            pybamm.Parameter("Negative electrode porosity"), "negative electrode"
+        )
+        eps_s = pybamm.PrimaryBroadcast(
+            pybamm.Parameter("Separator porosity"), "separator"
+        )
+        eps_p = pybamm.PrimaryBroadcast(
+            pybamm.Parameter("Positive electrode porosity"), "positive electrode"
+        )
         eps = pybamm.Concatenation(eps_n, eps_s, eps_p)
 
         # Tortuosity
@@ -137,12 +146,14 @@ class BasicSPMe(BaseModel):
         ######################
         # Electrolyte concentration
         ######################
-        if linear_diffusion:
+        if linear_diffusion is True:
             # For the linear SPMe we evaluate the diffusivity at the typical value
             N_e = -tor * param.D_e(1, T) * pybamm.grad(c_e)
-        else:
+        elif linear_diffusion is False:
             # Otherwise evaluate diffusivity using c_e
             N_e = -tor * param.D_e(c_e, T) * pybamm.grad(c_e)
+        else:
+            raise pybamm.OptionError("linear_diffusion must be either True or False")
 
         # We create a concatenation for the reaction current
         j = pybamm.Concatenation(
@@ -162,6 +173,14 @@ class BasicSPMe(BaseModel):
         ######################
         # (Some) variables
         ######################
+
+        if use_log is False:
+            fun = linear_function
+        elif use_log is True:
+            fun = log_function
+        else:
+            raise pybamm.OptionError("use_log must be either True or False")
+
         U_n = param.U_n(c_s_surf_n, T)
         U_p = param.U_p(c_s_surf_p, T)
         ocv = U_p - U_n
@@ -181,13 +200,17 @@ class BasicSPMe(BaseModel):
             * (1 - c_s_surf_p) ** (1 / 2)
             * (c_e_p) ** (1 / 2)
         )
-        eta_n = (2 / param.ne_n) * pybamm.arcsinh(j_n / (2 * j0_n))
-        eta_p = (2 / param.ne_p) * pybamm.arcsinh(j_p / (2 * j0_p))
+        eta_n = (2 * (1 + self.param.Theta * T) / param.ne_n) * pybamm.arcsinh(
+            j_n / (2 * j0_n)
+        )
+        eta_p = (2 * (1 + self.param.Theta * T) / param.ne_p) * pybamm.arcsinh(
+            j_p / (2 * j0_p)
+        )
         eta_r = eta_p - eta_n
         eta_c = (
             2
             * (1 - param.t_plus(pybamm.x_average(c_e)))
-            * (pybamm.x_average(c_e_p) - pybamm.x_average(c_e_n))
+            * (pybamm.x_average(fun(c_e_p, c_e)) - pybamm.x_average(fun(c_e_n, c_e)))
         )
         delta_phi_e_av = -(
             param.C_e * i_cell / (param.gamma_e * param.kappa_e(1, T))
@@ -196,15 +219,110 @@ class BasicSPMe(BaseModel):
             + pybamm.x_average(param.l_s / (eps_s ** param.b_e_s))
             + pybamm.x_average(param.l_p / (3 * eps_p ** param.b_e_p))
         )
+
         delta_phi_s_av = -(i_cell / 3) * (
             param.l_p / param.sigma_p + param.l_n / param.sigma_n
         )
         V = ocv + eta_r + eta_c + delta_phi_e_av + delta_phi_s_av
+
+        # Domains at cell centres
+        x_n = pybamm.SpatialVariable(
+            "x_n", domain=["negative electrode"], coord_sys="cartesian",
+        )
+        x_s = pybamm.SpatialVariable(
+            "x_s", domain=["separator"], coord_sys="cartesian",
+        )
+        x_p = pybamm.SpatialVariable(
+            "x_p", domain=["positive electrode"], coord_sys="cartesian",
+        )
+
+        eps_n_av = pybamm.x_average(eps_n)
+        eps_s_av = pybamm.x_average(eps_s)
+        eps_p_av = pybamm.x_average(eps_p)
+
+
+        phi_s_n_av = -(i_cell / 3) * param.l_n / param.sigma_n
+
+        c_e_av = pybamm.x_average(c_e)
+
+        # Electrolyte potentials
+        phi_e_const = (
+            phi_s_n_av
+            - U_n
+            - eta_n
+            - 2
+            * (1 - param.t_plus(c_e_av))
+            * (1 + param.Theta * T)
+            * pybamm.x_average(fun(c_e_n, c_e))
+            - (
+                (
+                    i_cell
+                    * param.C_e
+                    * param.l_n
+                    / (param.gamma_e * param.kappa_e(c_e_av, T))
+                )
+                * (1 / (3 * eps_n_av ** param.b_e_n) - 1 / eps_s_av ** param.b_e_s)
+            )
+        )
+
+        phi_e_n = (
+            phi_e_const
+            + 2 * (1 - param.t_plus(c_e_av)) * (1 + param.Theta * T) * fun(c_e_n, c_e)
+            - i_cell
+            * param.C_e
+            / (param.gamma_e * param.kappa_e(1, T))
+            * (x_n ** 2 - param.l_n ** 2)
+            / (2 * param.l_n * eps_n_av ** param.b_e_n)
+            - i_cell
+            * param.l_n
+            * (param.C_e / param.gamma_e)
+            / param.kappa_e(c_e_av, T)
+            / (eps_s_av ** param.b_e_s)
+        )
+
+        phi_e_s = (
+            phi_e_const
+            + 2 * (1 - param.t_plus(c_e_av)) * (1 + param.Theta * T) * fun(c_e_s, c_e)
+            - (
+                i_cell
+                * param.C_e
+                / param.gamma_e
+                / (param.kappa_e(c_e_av, T) * eps_s_av ** param.b_e_s)
+                * x_s
+            )
+        )
+
+        phi_e_p = (
+            phi_e_const
+            + 2 * (1 - param.t_plus(c_e_av)) * (1 + param.Theta * T) * fun(c_e_p, c_e)
+            - (
+                i_cell
+                * (param.C_e / param.gamma_e)
+                / (param.kappa_e(c_e_av, T) * eps_p_av ** param.b_e_p)
+            )
+            * (x_p * (2 - x_p) + param.l_p ** 2 - 1)
+            / (2 * param.l_p)
+            - i_cell
+            * (1 - param.l_p)
+            * (param.C_e / param.gamma_e)
+            / (param.kappa_e(1, T) * eps_s_av ** param.b_e_s)
+        )
+
+        phi_e = pybamm.Concatenation(phi_e_n, phi_e_s, phi_e_p)
+
         self.variables = {
             "Electrolyte concentration": c_e,
             "Electrolyte concentration [mol.m-3]": c_e * param.c_e_typ,
+            "Electrolyte potential [V]": phi_e * param.potential_scale - param.U_n_ref,
+            "Negative electrode potential [V]": pybamm.PrimaryBroadcast(
+                phi_s_n_av, ["negative electrode"]
+            )
+            * param.potential_scale,
             "Terminal voltage": V,
             "Terminal voltage [V]": param.U_p_ref
+            - param.U_n_ref
+            + param.potential_scale * V,
+            "Real terminal voltage [V]": param.U_p_ref
             - param.U_n_ref
             + param.potential_scale * V,
             "Time [s]": pybamm.t * param.timescale,
@@ -218,3 +336,12 @@ class BasicSPMe(BaseModel):
     @property
     def default_geometry(self):
         return pybamm.Geometry("1D macro", "1D micro")
+
+
+def linear_function(c_e, c_e_full):
+    return c_e - pybamm.x_average(c_e_full)
+
+
+def log_function(c_e, c_e_full):
+    c_e_av = pybamm.x_average(c_e_full)
+    return pybamm.log(c_e / c_e_av)

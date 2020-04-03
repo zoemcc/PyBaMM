@@ -606,6 +606,9 @@ class BaseBatteryModel(pybamm.BaseModel):
 
         # TODO: add current collector losses to the voltage in 3D
 
+        eta_e_av = self.variables["X-averaged electrolyte overpotential"]
+        v = ocv_av + eta_r_av + eta_e_av + delta_phi_s_av
+
         self.variables.update(
             {
                 "X-averaged open circuit voltage": ocv_av,
@@ -616,6 +619,13 @@ class BaseBatteryModel(pybamm.BaseModel):
                 "X-averaged reaction overpotential [V]": eta_r_av_dim,
                 "X-averaged solid phase ohmic losses": delta_phi_s_av,
                 "X-averaged solid phase ohmic losses [V]": delta_phi_s_av_dim,
+                "Terminal voltage": v,
+                "Terminal voltage [V]": v * self.param.potential_scale
+                + self.param.U_p_ref
+                - self.param.U_n_ref,
+                "Real terminal voltage [V]": v * self.param.potential_scale
+                + self.param.U_p_ref
+                - self.param.U_n_ref,
             }
         )
 
