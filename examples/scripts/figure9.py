@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 os.chdir(pybamm.root_dir())
 
 # set style
-matplotlib.rc_file("examples/scripts/_matplotlibrc", use_default_template=True)
+# matplotlib.rc_file("examples/scripts/_matplotlibrc", use_default_template=True)
 
 # Models ----------------------------------------------------------------------
 print("Setting up models")
@@ -150,8 +150,8 @@ print("cSP", csp_solve_times)
 print("Generating plots")
 
 # plot -- could probably be generated more efficiently...
-fig, ax = plt.subplots(2, 2, figsize=(6.4, 6))
-fig.subplots_adjust(left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5)
+fig, ax = plt.subplots(2, 2, figsize=(9, 6))
+fig.subplots_adjust(left=0.1, bottom=0.1, right=0.74, top=0.93, wspace=0.33, hspace=0.5)
 linestyles = {
     "SPM": "-",
     "DFN": "-",
@@ -170,7 +170,6 @@ colors = {
     "SPMe (ND+L)": (0.99, 0.43, 0.1),
 }
 
-255, 110, 25
 
 markers = [None, "s", "o", "x", None]
 markeverys = [50, 40, 50, 70, 50]
@@ -210,7 +209,7 @@ ax[0, 0].set_xticks(t_minor_ticks, minor=True)
 ax[0, 0].set_yticks(V_major_ticks)
 ax[0, 0].set_yticks(V_minor_ticks, minor=True)
 ax[0, 0].grid(which="major")
-ax[0, 0].legend(loc="lower left")
+# ax[0, 0].legend(loc="lower left")
 ax[0, 0].title.set_text("1C")
 
 # 2.5C
@@ -245,8 +244,10 @@ ax[0, 1].set_xticks(t_minor_ticks, minor=True)
 ax[0, 1].set_yticks(V_major_ticks)
 ax[0, 1].set_yticks(V_minor_ticks, minor=True)
 ax[0, 1].grid(which="major")
-ax[0, 1].legend(loc="lower left")
+# ax[0, 1].legend(loc="lower left")
 ax[0, 1].title.set_text("2.5C")
+
+ax[0, 1].legend(loc="upper left", bbox_to_anchor=(1, 1))
 
 # 5C
 for model in models_to_plot:
@@ -279,7 +280,7 @@ ax[1, 0].set_xticks(t_minor_ticks, minor=True)
 ax[1, 0].set_yticks(V_major_ticks)
 ax[1, 0].set_yticks(V_minor_ticks, minor=True)
 ax[1, 0].grid(which="major")
-ax[1, 0].legend(loc="lower left")
+# ax[1, 0].legend(loc="lower left")
 ax[1, 0].title.set_text("5C")
 
 # 5C
@@ -313,16 +314,16 @@ ax[1, 1].set_xticks(t_minor_ticks, minor=True)
 ax[1, 1].set_yticks(V_major_ticks)
 ax[1, 1].set_yticks(V_minor_ticks, minor=True)
 ax[1, 1].grid(which="major")
-ax[1, 1].legend(loc="lower left")
+# ax[1, 1].legend(loc="lower left")
 ax[1, 1].title.set_text("7.5C")
 
 plt.savefig("ecker_c_rates.pdf", format="pdf", dpi=1000)
 plt.show()
 
 
-fig_err, ax_err = plt.subplots(2, 2, figsize=(6.4, 6))
+fig_err, ax_err = plt.subplots(2, 2, figsize=(9, 6))
 fig_err.subplots_adjust(
-    left=0.1, bottom=0.1, right=0.95, top=0.85, wspace=0.3, hspace=0.5
+    left=0.1, bottom=0.1, right=0.74, top=0.93, wspace=0.33, hspace=0.5
 )
 
 # removed "DFN" from here
@@ -346,7 +347,7 @@ for model in models_to_plot:
     ax_err[0, 0].semilogy(
         t,
         error,
-        label=model,
+        label=model + " vs. DFN",
         linestyle=linestyles[model],
         color=colors[model],
         # marker=markers[i],
@@ -365,7 +366,7 @@ ax_err[0, 0].set_ylim([1e-5, 1])
 # ax_err[0, 0].set_yticks(V_major_ticks)
 # ax_err[0, 0].set_yticks(V_minor_ticks, minor=True)
 ax_err[0, 0].grid(which="major")
-ax_err[0, 0].legend(loc="upper left")
+# ax_err[0, 0].legend(loc="upper left")
 ax_err[0, 0].title.set_text("1C")
 
 # 2.5C
@@ -387,7 +388,7 @@ for model in models_to_plot:
     ax_err[0, 1].semilogy(
         t,
         error,
-        label=model,
+        label=model + " vs. DFN",
         linestyle=linestyles[model],
         color=colors[model],
         # marker=markers[i],
@@ -409,6 +410,8 @@ ax_err[0, 1].grid(which="major")
 # ax_err[0, 0].legend(loc="lower left")
 ax_err[0, 1].title.set_text("2.5C")
 
+ax_err[0, 1].legend(loc="upper left", bbox_to_anchor=(1, 1))
+
 # 5C
 true_voltage = solutions["DFN"][2]["Terminal voltage [V]"](solutions["DFN"][2].t)
 for model in models_to_plot:
@@ -428,7 +431,7 @@ for model in models_to_plot:
     ax_err[1, 0].semilogy(
         t,
         error,
-        label=model,
+        label=model + " vs. DFN",
         linestyle=linestyles[model],
         color=colors[model],
         # marker=markers[i],
@@ -438,7 +441,7 @@ for model in models_to_plot:
 
 ax_err[1, 0].set_xlabel("Time [s]")
 ax_err[1, 0].set_ylabel("Absolute error [V]")
-ax_err[1, 1].set_xlim([0, 500])
+ax_err[1, 0].set_xlim([0, 800])
 ax_err[1, 0].set_ylim([1e-5, 1])
 # t_major_ticks = np.arange(0, 4000, 500)
 # t_minor_ticks = np.arange(250, 3750, 500)
@@ -477,7 +480,7 @@ for model in models_to_plot:
     ax_err[1, 1].semilogy(
         t,
         error,
-        label=model,
+        label=model + " vs. DFN",
         linestyle=linestyles[model],
         color=colors[model],
         # marker=markers[i],

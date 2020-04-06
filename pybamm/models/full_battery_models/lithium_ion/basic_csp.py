@@ -261,9 +261,12 @@ class BasicCSP(BaseModel):
         phi_e_s = phi_e_s - pybamm.x_average(phi_e_n) + phi_e_ref
         phi_e_p = phi_e_p - pybamm.x_average(phi_e_n) + phi_e_ref
 
+        c_e_typ = pybamm.standard_parameters_lithium_ion.c_e_typ
+
         self.variables = {
             "phi e ref": phi_e_ref,
             "Electrolyte concentration": c_e,
+            "Electrolyte concentration [mol.m-3]": c_e * c_e_typ,
             "Negative electrode potential": phi_s_n,
             "Negative electrode potential [V]": phi_s_n * param.potential_scale,
             "Positive electrode potential drop": phi_s_p * param.potential_scale

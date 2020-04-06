@@ -282,13 +282,17 @@ class BasicDFN(BaseModel):
         voltage = pybamm.boundary_value(phi_s_p, "right")
         # The `variables` dictionary contains all variables that might be useful for
         # visualising the solution of the model
+
+        c_e_typ = pybamm.standard_parameters_lithium_ion.c_e_typ
         self.variables = {
             "Negative particle surface concentration": c_s_surf_n,
             "Electrolyte concentration": c_e,
+            "Electrolyte concentration [mol.m-3]": c_e * c_e_typ,
             "Positive particle surface concentration": c_s_surf_p,
             "Current [A]": I,
             "Negative electrode potential": phi_s_n,
             "Electrolyte potential": phi_e,
+            "Electrolyte potential [V]": phi_e * param.potential_scale - param.U_n_ref,
             "Positive electrode potential": phi_s_p,
             "Terminal voltage": voltage,
             "Terminal voltage [V]": param.U_p_ref
