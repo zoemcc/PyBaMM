@@ -5,7 +5,7 @@ pb.set_logging_level("INFO")
 # pb.settings.debug_mode = True
 
 c_rate = 5
-load = False
+load = True
 
 filename = "qdot_cell_charge_with_electrolyte_1D" + str(c_rate) + "C.p"
 
