@@ -51,17 +51,7 @@ For further examples, see the list of repositories that use PyBaMM [here](https:
 
 ## How can I obtain & install PyBaMM?
 
-### Linux
-
-For instructions on installing PyBaMM on Debian-based distributions, please see [here](INSTALL-LINUX-MAC.md).
-
-### Mac OS
-
-For instructions on installing PyBaMM on Mac OS distributions, please see [here](INSTALL-LINUX-MAC.md).
-
-### Windows
-
-For instructions on installing PyBaMM on Windows distributions, please see [here](INSTALL-WINDOWS.md). If you want to install the optional solvers (such as scikits-odes and KLU solvers), install PyBaMM on the Windows Subsystem for Linux following the instructions [here](INSTALL-WINDOWS-WSL.md) 
+See the installation instructions on the [[PyBaMM documentation](https://pybamm.readthedocs.io/).
 
 ## Citing PyBaMM
 
