@@ -8,15 +8,46 @@ Welcome to PyBaMM's documentation!
 Python Battery Mathematical Modelling (**PyBAMM**) solves continuum models for
 batteries, using both numerical methods and asymptotic analysis.
 
-PyBaMM is hosted on GitHub_. This page provides the *API*, or *developer
-documentation* for ``pybamm``.
+PyBaMM is hosted on GitHub_. This page provides installation instructions, as well as the *API*, or *developer documentation* for ``pybamm``.
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 
-Contents
-========
+Quickstart
+=========================
+PyBaMM is available on GNU/Linux, MacOS and Windows.
+
+Using pip
+----------
+
+.. code:: bash
+
+   pip install pybamm
+
+Using conda
+-------------
+PyBaMM is available as a conda package through the conda-forge channel.
+
+.. code:: bash
+
+   conda install -c conda-forge pybamm
+
+Optional solvers
+-----------------
+Several PyBaMM solvers require extra dependencies, such as the `scikits.odes package <https://scikits-odes.readthedocs.io/en/latest/>`_ or the `SUNDIALS library <https://computing.llnl.gov/projects/sundials>`_. See :ref:`optional-deps`.
+
+Installation instructions
+=========================
+.. toctree::
+   :maxdepth: 2
+
+   install/GNU-linux
+   install/windows
+   install/windows-wsl
+
+API documentation
+=====================
 
 .. module:: pybamm
 
@@ -33,6 +64,7 @@ Contents
     source/experiments/index
     source/simulation
     source/quick_plot
+    source/processed_variable
     source/util
     source/citations
     source/parameters_cli
