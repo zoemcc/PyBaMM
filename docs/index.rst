@@ -31,10 +31,9 @@ Contents
     source/spatial_methods/index
     source/solvers/index
     source/experiments/index
-    source/processed_variable
-    source/util
     source/simulation
     source/plotting
+    source/util
     source/citations
     source/parameters_cli
 
