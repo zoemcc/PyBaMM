@@ -2,10 +2,10 @@
 # Resistor model
 #
 import pybamm
-from .base_equivalent_circuit_model import BaseEquivalentCircuitModel
+from .base_equivalent_circuit_model import BaseModel
 
 
-class Resistor(BaseEquivalentCircuitModel):
+class Resistor(BaseModel):
     """Resistor model of a lithium-ion battery. Here, each through-cell
      electrochemical component of the cell is simple treated as a resistor.
 
@@ -22,7 +22,7 @@ class Resistor(BaseEquivalentCircuitModel):
         built).
     """
 
-    def __init__(self, options=None, name="Single Particle Model", build=True):
+    def __init__(self, options=None, name="Resistor Model", build=True):
         super().__init__(options, name)
 
         self.set_external_circuit_submodel()
@@ -33,4 +33,5 @@ class Resistor(BaseEquivalentCircuitModel):
             self.build_model()
 
     def set_circuit_elements(self):
+        self.submodels["SoC"] = pybamm.circuit_elements.SoC(self.param)
         self.submodels["OCV"] = pybamm.circuit_elements.OCV(self.param)

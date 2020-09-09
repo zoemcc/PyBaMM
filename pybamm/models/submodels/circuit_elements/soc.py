@@ -31,11 +31,9 @@ class SoC(pybamm.BaseSubModel):
         SoC = variables["SoC"]
         i_through_cell = variables["Current collector current density"]
         eta = self.param.eta  # Coulombic efficiency
-        C_nominal = (
-            self.param.C_nominal
-        )  # Nominal capacity per unit area (dimensionless)
+        C_nom = self.param.C_nom  # Nominal capacity per unit area (dimensionless)
 
-        self.rhs[SoC] = -i_through_cell * eta / C_nominal
+        self.rhs[SoC] = -i_through_cell * eta / C_nom
 
         return variables
 

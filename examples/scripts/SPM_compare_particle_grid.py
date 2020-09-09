@@ -17,8 +17,9 @@ else:
     pybamm.set_logging_level("INFO")
 
 # load models
+options = {"particle": "uniform profile"}
 models = [
-    pybamm.lithium_ion.SPM(name="Uniform mesh"),
+    pybamm.lithium_ion.SPM(name="Uniform mesh", options=options),
     pybamm.lithium_ion.SPM(name="Chebyshev mesh"),
     pybamm.lithium_ion.SPM(name="Exponential mesh"),
 ]

@@ -137,14 +137,21 @@ class ParameterValues:
 
         # Load each component name
 
-        component_groups = [
-            "cell",
-            "anode",
-            "cathode",
-            "separator",
-            "electrolyte",
-            "experiment",
-        ]
+        if "equivalent-circuit" in chemistry:
+            component_groups = [
+                "equivalent-circuit",
+                "cell",
+                "ec-experiment",
+            ]
+        else:
+            component_groups = [
+                "cell",
+                "anode",
+                "cathode",
+                "separator",
+                "electrolyte",
+                "experiment",
+            ]
 
         # add sei parameters if provided
         if "sei" in chemistry:

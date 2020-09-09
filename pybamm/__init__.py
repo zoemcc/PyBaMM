@@ -129,6 +129,9 @@ from .models.full_battery_models.base_battery_model import BaseBatteryModel
 from .models.full_battery_models import lead_acid
 from .models.full_battery_models import lithium_ion
 
+# Equivalent circuit models
+from .models import equivalent_circuit_models
+
 #
 # Submodel classes
 #
@@ -156,6 +159,7 @@ from .models.submodels.interface import sei
 #
 from .geometry.geometry import Geometry
 from .geometry.battery_geometry import battery_geometry
+from .geometry.ec_geometry import ec_geometry
 
 from .expression_tree.independent_variable import KNOWN_COORD_SYS
 from .geometry import standard_spatial_vars
@@ -169,6 +173,7 @@ from .parameters.geometric_parameters import GeometricParameters
 from .parameters.electrical_parameters import ElectricalParameters
 from .parameters.thermal_parameters import ThermalParameters
 from .parameters.lithium_ion_parameters import LithiumIonParameters
+from .parameters.equivalent_circuit_parameters import EquivalentCircuitParameters
 from .parameters.lead_acid_parameters import LeadAcidParameters
 from .parameters import parameter_sets
 

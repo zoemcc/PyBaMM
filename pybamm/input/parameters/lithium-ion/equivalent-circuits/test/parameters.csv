@@ -1,0 +1,8 @@
+Name [units],Value,Reference,Notes
+# Empty rows and rows starting with ‘#’ will be ignored,,,
+,,,
+# Macroscale geometry,,,
+Open-circuit voltage [V],[data]OCV_howey_2016, Howey 2016,
+Open-circuit voltage entropic change [V.K-1],0, Howey 2016,
+Coulombic efficiency, 0.99, Guess,
+R_0 [Ohm], 0.0008, Parameterization of linear equivalent circuit models over wide temperature and SOC spans for automotive lithium-ion cells using electrochemical impedance spectroscopy,0.8mOhms

@@ -106,8 +106,11 @@ class EquivalentCircuitParameters:
         # Reference OCV based on initial SoC
         self.OCV_ref = self.OCV_dimensional(self.SoC_init, self.T_ref)
 
+        # Thermal
+        self.Delta_T = self.therm.Delta_T
+
         # Discharge timescale
-        self.tau_discharge = 3600  # 1 hour
+        self.tau_discharge = pybamm.Scalar(3600)  # 1 hour
 
         # Thermal diffusion timescale
         self.tau_th_yz = self.therm.tau_th_yz
@@ -145,7 +148,8 @@ class EquivalentCircuitParameters:
         self.centre_z_tab_p = self.geo.centre_z_tab_p
 
         # Electrical
-        self.eta = pybamm.Parameter("Coloumbic efficiency")
+        self.C_nom = (self.Q / self.L_y / self.L_z) / (self.i_typ * self.tau_discharge)
+        self.eta = pybamm.Parameter("Coulombic efficiency")
         self.voltage_low_cut = (
             self.voltage_low_cut_dimensional - (self.OCV_ref)
         ) / self.potential_scale

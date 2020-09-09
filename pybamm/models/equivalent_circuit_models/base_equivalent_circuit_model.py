@@ -5,7 +5,7 @@
 import pybamm
 
 
-class BaseEquivalentCircuitModel(pybamm.BaseModel):
+class BaseModel(pybamm.BaseModel):
     """
     Base model class for equivalent circuit models with some default settings
     and required variables.
@@ -30,6 +30,10 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
 
     def __init__(self, options=None, name="Unnamed equivalent circuit model"):
         super().__init__(name)
+        self.param = pybamm.EquivalentCircuitParameters()
+        # Default timescale is discharge timescale
+        self.timescale = self.param.tau_discharge
+
         self.options = options
         self.submodels = {}
         self._built = False
@@ -39,11 +43,11 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
     def default_parameter_values(self):
         # Default parameter values
         # Lion parameters left as default parameter set for tests
-        return pybamm.ParameterValues(chemistry=pybamm.parameter_sets.Marquis2019)
+        return pybamm.ParameterValues(chemistry=pybamm.parameter_sets.ec_test)
 
     @property
     def default_geometry(self):
-        return pybamm.battery_geometry(
+        return pybamm.ec_geometry(
             current_collector_dimension=self.options["dimensionality"]
         )
 
@@ -51,8 +55,8 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
     def default_var_pts(self):
         var = pybamm.standard_spatial_vars
         base_var_pts = {
-            var.y: 10,
-            var.z: 10,
+            var.y: 20,
+            var.z: 20,
         }
         return base_var_pts
 
@@ -353,16 +357,6 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
         self.submodels["current collector"] = submodel
 
     def set_voltage_variables(self):
-
-        ocv = 0
-        ocv_dim = 0
-
-        self.variables.update(
-            {
-                "Measured open circuit voltage": ocv,
-                "Measured open circuit voltage [V]": ocv_dim,
-            }
-        )
 
         V_dim = self.variables["Terminal voltage [V]"]
         num_cells = pybamm.Parameter(

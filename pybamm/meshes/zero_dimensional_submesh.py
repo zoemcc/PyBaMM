@@ -39,6 +39,7 @@ class SubMesh0D(SubMesh):
         self.edges = np.array([spatial_position])
         self.coord_sys = None
         self.npts = 1
+        self.npts_for_broadcast_to_nodes = 1
 
     def add_ghost_meshes(self):
         # No ghost meshes to be added to this class

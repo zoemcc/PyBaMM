@@ -130,3 +130,15 @@ Sulzer2019 = {
     "experiment": "1C_discharge_from_full",
     "citation": "sulzer2019physical",
 }
+
+# --------------------
+#
+# Equivalent circuits
+#
+ec_test = {
+    "chemistry": "lithium-ion",
+    "equivalent-circuit": "test",
+    "cell": "Kim2011",
+    "ec-experiment": "1C_discharge_from_full_Kim2011",
+    "citation": "marquis2019asymptotic",
+}
