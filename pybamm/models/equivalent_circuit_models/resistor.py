@@ -35,3 +35,4 @@ class Resistor(BaseModel):
     def set_circuit_elements(self):
         self.submodels["SoC"] = pybamm.circuit_elements.SoC(self.param)
         self.submodels["OCV"] = pybamm.circuit_elements.OCV(self.param)
+        self.submodels["R_0"] = pybamm.circuit_elements.LinearResistor(self.param)

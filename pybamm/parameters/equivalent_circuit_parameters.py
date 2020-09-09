@@ -76,6 +76,18 @@ class EquivalentCircuitParameters:
         self.voltage_low_cut_dimensional = self.elec.voltage_low_cut_dimensional
         self.voltage_high_cut_dimensional = self.elec.voltage_high_cut_dimensional
 
+        # Current Collector
+        self.sigma_cn_dimensional = pybamm.Parameter(
+            "Negative current collector conductivity [S.m-1]"
+        )
+        self.sigma_cp_dimensional = pybamm.Parameter(
+            "Positive current collector conductivity [S.m-1]"
+        )
+
+        # Circuit elements
+        self.C_nom_dim = pybamm.Parameter("Nominal capacity [A.h]")
+        self.R_0 = pybamm.Parameter("R_0 [Ohm]")
+
         # Initial conditions
         self.SoC_init = pybamm.Parameter("Initial SoC")
 
@@ -148,7 +160,10 @@ class EquivalentCircuitParameters:
         self.centre_z_tab_p = self.geo.centre_z_tab_p
 
         # Electrical
-        self.C_nom = (self.Q / self.L_y / self.L_z) / (self.i_typ * self.tau_discharge)
+        self.C_nom = (self.C_nom_dim / self.L_y / self.L_z) / (
+            self.i_typ * self.tau_discharge
+        )
+        self.R_0 = self.R_0 * self.i_typ
         self.eta = pybamm.Parameter("Coulombic efficiency")
         self.voltage_low_cut = (
             self.voltage_low_cut_dimensional - (self.OCV_ref)
@@ -156,6 +171,18 @@ class EquivalentCircuitParameters:
         self.voltage_high_cut = (
             self.voltage_high_cut_dimensional - (self.OCV_ref)
         ) / self.potential_scale
+
+        # Current Collector
+        self.sigma_cn = (
+            self.sigma_cn_dimensional * self.potential_scale / self.i_typ / self.L_x
+        )
+        self.sigma_cp = (
+            self.sigma_cp_dimensional * self.potential_scale / self.i_typ / self.L_x
+        )
+        self.sigma_cn_prime = self.sigma_cn * self.delta ** 2
+        self.sigma_cp_prime = self.sigma_cp * self.delta ** 2
+        self.sigma_cn_dbl_prime = self.sigma_cn_prime * self.delta
+        self.sigma_cp_dbl_prime = self.sigma_cp_prime * self.delta
 
         # Thermal
         self.rho_cn = self.therm.rho_cn

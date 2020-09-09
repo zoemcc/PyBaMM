@@ -206,6 +206,11 @@ class QuickPlot(object):
                     "Electrolyte potential [V]",
                     "Terminal voltage [V]",
                 ]
+            elif isinstance(models[0], pybamm.equivalent_circuit_models.BaseModel):
+                output_variables = [
+                    "SoC",
+                    "Terminal voltage [V]"
+                ]
 
         # Prepare dictionary of variables
         # output_variables is a list of strings or lists, e.g.

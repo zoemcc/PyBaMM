@@ -20,7 +20,7 @@ class SoC(pybamm.BaseSubModel):
 
     def get_fundamental_variables(self):
         SoC = pybamm.Variable("SoC", domain="current collector", bounds=(0, 1))
-        variables = {"SoC": SoC}
+        variables = {"SoC": SoC, "Av SoC": SoC - pybamm.z_average(SoC)}
         return variables
 
     def set_rhs(self, variables):
@@ -33,7 +33,7 @@ class SoC(pybamm.BaseSubModel):
         eta = self.param.eta  # Coulombic efficiency
         C_nom = self.param.C_nom  # Nominal capacity per unit area (dimensionless)
 
-        self.rhs[SoC] = -i_through_cell * eta / C_nom
+        self.rhs[SoC] = -i_through_cell * eta / C_nom * 0.001
 
         return variables
 
