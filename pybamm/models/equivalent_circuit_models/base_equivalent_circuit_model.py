@@ -1,9 +1,8 @@
 #
-# Base battery model class
+# Base equivalent circuit model class
 #
 
 import pybamm
-import warnings
 
 
 class BaseEquivalentCircuitModel(pybamm.BaseModel):
@@ -360,6 +359,9 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
         self.submodels["current collector"] = submodel
 
     def set_voltage_variables(self):
+
+        ocv = 0
+        ocv_dim = 0
 
         self.variables.update(
             {
