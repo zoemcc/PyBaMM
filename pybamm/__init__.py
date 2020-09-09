@@ -147,6 +147,7 @@ from .models.submodels import (
     porosity,
     thermal,
     tortuosity,
+    circuit_elements,
 )
 from .models.submodels.interface import sei
 

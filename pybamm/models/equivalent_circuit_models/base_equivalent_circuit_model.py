@@ -18,12 +18,6 @@ class BaseEquivalentCircuitModel(pybamm.BaseModel):
         be set are listed below. Note that not all of the options are compatible with
         each other and with all of the models implemented in PyBaMM.
 
-            * "cell geometry" : str, optional
-                Sets the geometry of the cell. Can be "pouch" (default) or
-                "arbitrary". The arbitrary geometry option solves a 1D electrochemical
-                model with prescribed cell volume and cross-sectional area, and
-                (if thermal effects are included) solves a lumped thermal model
-                with prescribed surface area for cooling.
             * "dimensionality" : int, optional
                 Sets the dimension of the current collector problem. Can be 0
                 (default), 1 or 2.
