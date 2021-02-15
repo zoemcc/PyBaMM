@@ -8,13 +8,13 @@ import numpy as np
 pybamm.set_logging_level("INFO")
 
 # load model
-model = pybamm.lithium_ion.DFN({"lithium plating": "reversible"})
+model = pybamm.lithium_ion.DFN()
 
 # create geometry
 geometry = model.default_geometry
 
 # load parameter values and process model and geometry
-param = pybamm.ParameterValues(chemistry=pybamm.parameter_sets.Chen2020_plating)
+param = model.default_parameter_values
 param.process_model(model)
 param.process_geometry(geometry)
 
