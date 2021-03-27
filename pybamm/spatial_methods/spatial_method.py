@@ -40,11 +40,11 @@ class SpatialMethod:
             mesh[dom].npts_for_broadcast_to_nodes = mesh[dom].npts
         self._mesh = mesh
 
-    def _get_auxiliary_domain_repeats(self, auxiliary_domains):
+    def _get_auxiliary_domain_repeats(self, auxiliary_domains, tertiary_only=False):
         """
         Helper method to read the 'auxiliary_domain' meshes
         """
-        if "secondary" in auxiliary_domains:
+        if tertiary_only is False and "secondary" in auxiliary_domains:
             sec_mesh_npts = self.mesh.combine_submeshes(
                 *auxiliary_domains["secondary"]
             ).npts
@@ -80,7 +80,7 @@ class SpatialMethod:
         """
         symbol_mesh = self.mesh.combine_submeshes(*symbol.domain)
         repeats = self._get_auxiliary_domain_repeats(symbol.auxiliary_domains)
-        if symbol.evaluates_on_edges():
+        if symbol.evaluates_on_edges("primary"):
             entries = np.tile(symbol_mesh.edges, repeats)
         else:
             entries = np.tile(symbol_mesh.nodes, repeats)
@@ -139,7 +139,7 @@ class SpatialMethod:
         elif broadcast_type.startswith("full"):
             out = symbol * pybamm.Vector(np.ones(full_domain_size), domain=domain)
 
-        out.auxiliary_domains = auxiliary_domains
+        out.auxiliary_domains = auxiliary_domains.copy()
         return out
 
     def gradient(self, symbol, discretised_symbol, boundary_conditions):
@@ -231,7 +231,7 @@ class SpatialMethod:
         """
         raise NotImplementedError
 
-    def integral(self, child, discretised_child):
+    def integral(self, child, discretised_child, integration_dimension):
         """
         Implements the integral for a spatial method.
 
@@ -241,6 +241,8 @@ class SpatialMethod:
             The symbol to which is being integrated
         discretised_child: :class:`pybamm.Symbol`
             The discretised symbol of the correct size
+        integration_dimension : str, optional
+            The dimension in which to integrate (default is "primary")
 
         Returns
         -------
@@ -442,7 +444,7 @@ class SpatialMethod:
             Discretised binary operator
 
         """
-        return bin_op.__class__(disc_left, disc_right)
+        return bin_op._binary_new_copy(disc_left, disc_right)
 
     def concatenation(self, disc_children):
         """Discrete concatenation object.
@@ -457,4 +459,4 @@ class SpatialMethod:
         :class:`pybamm.DomainConcatenation`
             Concatenation of the discretised children
         """
-        return pybamm.DomainConcatenation(disc_children, self.mesh)
+        return pybamm.domain_concatenation(disc_children, self.mesh)

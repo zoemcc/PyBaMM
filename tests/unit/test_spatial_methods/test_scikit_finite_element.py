@@ -16,7 +16,7 @@ class TestScikitFiniteElement(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             spatial_method.divergence(None, None, None)
         with self.assertRaises(NotImplementedError):
-            spatial_method.indefinite_integral(None, None)
+            spatial_method.indefinite_integral(None, None, None)
 
     def test_discretise_equations(self):
         # get mesh
@@ -471,7 +471,7 @@ class TestScikitFiniteElement(unittest.TestCase):
             u: pybamm.laplacian(u)
             - pybamm.source(1, u)
             + c * pybamm.DefiniteIntegralVector(u, vector_type="column"),
-            c: pybamm.Integral(u, [y, z]) + 0 * c,
+            c: pybamm.Integral(u, [y, z]) + pybamm.Multiplication(0, c),
         }
         model.initial_conditions = {u: pybamm.Scalar(0), c: pybamm.Scalar(0)}
         # set boundary conditions ("negative tab" = bottom of unit square,

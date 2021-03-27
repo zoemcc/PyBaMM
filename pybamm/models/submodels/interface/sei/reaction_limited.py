@@ -6,7 +6,8 @@ from .base_sei import BaseModel
 
 
 class ReactionLimited(BaseModel):
-    """Base class for reaction limited SEI growth.
+    """
+    Class for reaction limited SEI growth.
 
     Parameters
     ----------
@@ -26,10 +27,12 @@ class ReactionLimited(BaseModel):
         L_outer = pybamm.standard_variables.L_outer
 
         variables = self._get_standard_thickness_variables(L_inner, L_outer)
+        variables.update(self._get_standard_concentration_variables(variables))
 
         return variables
 
     def get_coupled_variables(self, variables):
+        param = self.param
         phi_s_n = variables[self.domain + " electrode potential"]
         phi_e_n = variables[self.domain + " electrolyte potential"]
 
@@ -38,21 +41,22 @@ class ReactionLimited(BaseModel):
         # it's ok to fall back on the total interfacial current density, j_tot
         # This should only happen when the interface submodel is "InverseButlerVolmer"
         # in which case j = j_tot (uniform) anyway
-        try:
+        if self.domain + " electrode interfacial current density" in variables:
             j = variables[self.domain + " electrode interfacial current density"]
-        except KeyError:
+        else:
             j = variables[
                 "X-averaged "
                 + self.domain.lower()
                 + " electrode total interfacial current density"
             ]
-        L_sei = variables["Total " + self.domain.lower() + " electrode sei thickness"]
+        L_sei = variables["Total " + self.domain.lower() + " electrode SEI thickness"]
 
-        R_sei = pybamm.sei_parameters.R_sei
-        alpha = 0.5
-        # alpha = pybamm.sei_parameters.alpha
         if self.domain == "Negative":
-            C_sei = pybamm.sei_parameters.C_sei_reaction_n
+            R_sei = self.param.R_sei_n
+        alpha = 0.5
+        # alpha = param.alpha
+        if self.domain == "Negative":
+            C_sei = param.C_sei_reaction_n
 
         # need to revise for thermal case
         j_sei = -(1 / C_sei) * pybamm.exp(
@@ -66,9 +70,9 @@ class ReactionLimited(BaseModel):
 
         # Update whole cell variables, which also updates the "sum of" variables
         if (
-            "Negative electrode sei interfacial current density" in variables
-            and "Positive electrode sei interfacial current density" in variables
-            and "Sei interfacial current density" not in variables
+            "Negative electrode SEI interfacial current density" in variables
+            and "Positive electrode SEI interfacial current density" in variables
+            and "SEI interfacial current density" not in variables
         ):
             variables.update(
                 self._get_standard_whole_cell_interfacial_current_variables(variables)
@@ -78,14 +82,14 @@ class ReactionLimited(BaseModel):
 
     def set_rhs(self, variables):
         domain = self.domain.lower() + " electrode"
-        L_inner = variables["Inner " + domain + " sei thickness"]
-        L_outer = variables["Outer " + domain + " sei thickness"]
-        j_inner = variables["Inner " + domain + " sei interfacial current density"]
-        j_outer = variables["Outer " + domain + " sei interfacial current density"]
+        L_inner = variables["Inner " + domain + " SEI thickness"]
+        L_outer = variables["Outer " + domain + " SEI thickness"]
+        j_inner = variables["Inner " + domain + " SEI interfacial current density"]
+        j_outer = variables["Outer " + domain + " SEI interfacial current density"]
 
-        v_bar = pybamm.sei_parameters.v_bar
+        v_bar = self.param.v_bar
         if self.domain == "Negative":
-            Gamma_SEI = pybamm.sei_parameters.Gamma_SEI_n
+            Gamma_SEI = self.param.Gamma_SEI_n
 
         self.rhs = {
             L_inner: -Gamma_SEI * j_inner,
@@ -94,10 +98,10 @@ class ReactionLimited(BaseModel):
 
     def set_initial_conditions(self, variables):
         domain = self.domain.lower() + " electrode"
-        L_inner = variables["Inner " + domain + " sei thickness"]
-        L_outer = variables["Outer " + domain + " sei thickness"]
+        L_inner = variables["Inner " + domain + " SEI thickness"]
+        L_outer = variables["Outer " + domain + " SEI thickness"]
 
-        L_inner_0 = pybamm.sei_parameters.L_inner_0
-        L_outer_0 = pybamm.sei_parameters.L_outer_0
+        L_inner_0 = self.param.L_inner_0
+        L_outer_0 = self.param.L_outer_0
 
         self.initial_conditions = {L_inner: L_inner_0, L_outer: L_outer_0}

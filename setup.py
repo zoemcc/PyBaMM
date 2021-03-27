@@ -5,6 +5,8 @@ import subprocess
 from pathlib import Path
 from platform import system
 import wheel.bdist_wheel as orig
+import site
+import shutil
 
 try:
     from setuptools import setup, find_packages, Extension
@@ -134,7 +136,7 @@ def compile_KLU():
 # Build the list of package data files to be included in the PyBaMM package.
 # These are mainly the parameter files located in the input/parameters/ subdirectories.
 pybamm_data = []
-for file_ext in ["*.csv", "*.py", "*.md"]:
+for file_ext in ["*.csv", "*.py", "*.md", "*.txt"]:
     # Get all the files ending in file_ext in pybamm/input dir.
     # list_of_files = [
     #    'pybamm/input/drive_cycles/car_current.csv',
@@ -154,15 +156,28 @@ for file_ext in ["*.csv", "*.py", "*.md"]:
     )
 pybamm_data.append("./version")
 pybamm_data.append("./CITATIONS.txt")
+pybamm_data.append("./plotting/pybamm.mplstyle")
 
-idaklu_ext = Extension("idaklu", ["pybamm/solvers/c_solvers/idaklu.cpp"])
+idaklu_ext = Extension("pybamm.solvers.idaklu", ["pybamm/solvers/c_solvers/idaklu.cpp"])
 ext_modules = [idaklu_ext] if compile_KLU() else []
+
+jax_dependencies = []
+if system() != "Windows":
+    jax_dependencies = [
+        "jax==0.2.5",
+        "jaxlib==0.1.57",
+    ]
+
+
+# Load text for description and license
+with open("README.md", encoding="utf-8") as f:
+    readme = f.read()
 
 setup(
     name="pybamm",
-    version=load_version() + ".post7",
+    version=load_version(),
     description="Python Battery Mathematical Modelling.",
-    long_description="description",
+    long_description=readme,
     long_description_content_type="text/markdown",
     url="https://github.com/pybamm-team/PyBaMM",
     packages=find_packages(include=("pybamm", "pybamm.*")),
@@ -173,6 +188,8 @@ setup(
         "install": CustomInstall,
     },
     package_data={"pybamm": pybamm_data},
+    # Python version
+    python_requires=">=3.6,<3.10",
     # List of dependencies
     install_requires=[
         "numpy>=1.16",
@@ -182,7 +199,9 @@ setup(
         "autograd>=1.2",
         "scikit-fem>=0.2.0",
         "casadi>=3.5.0",
+        *jax_dependencies,
         "jupyter",  # For example notebooks
+        "pybtex",
         # Note: Matplotlib is loaded for debug plots, but to ensure pybamm runs
         # on systems without an attached display, it should never be imported
         # outside of plot() methods.
@@ -202,6 +221,12 @@ setup(
             "pybamm_add_parameter = pybamm.parameters_cli:add_parameter",
             "pybamm_rm_parameter = pybamm.parameters_cli:remove_parameter",
             "pybamm_install_odes = pybamm.install_odes:main",
-        ],
+        ]
     },
 )
+
+# pybtex adds a folder "tests" to the site packages, so we manually remove this
+path_to_sitepackages = site.getsitepackages()[0]
+path_to_tests_dir = os.path.join(path_to_sitepackages, "tests")
+if os.path.exists(path_to_tests_dir):
+    shutil.rmtree(path_to_tests_dir)

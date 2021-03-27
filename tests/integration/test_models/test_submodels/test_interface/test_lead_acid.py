@@ -3,7 +3,7 @@
 #
 import pybamm
 from tests import get_discretisation_for_testing
-
+import numpy as np
 import unittest
 
 
@@ -30,7 +30,7 @@ class TestMainReaction(unittest.TestCase):
 
     def test_creation_main_reaction(self):
         # With intercalation
-        param = pybamm.standard_parameters_lead_acid
+        param = pybamm.LeadAcidParameters()
         model_n = pybamm.interface.BaseInterface(param, "Negative", "lead-acid main")
         j0_n = model_n._get_exchange_current_density(self.variables)
         model_p = pybamm.interface.BaseInterface(param, "Positive", "lead-acid main")
@@ -40,7 +40,7 @@ class TestMainReaction(unittest.TestCase):
 
     def test_set_parameters_main_reaction(self):
         # With intercalation
-        param = pybamm.standard_parameters_lead_acid
+        param = pybamm.LeadAcidParameters()
         model_n = pybamm.interface.BaseInterface(param, "Negative", "lead-acid main")
         j0_n = model_n._get_exchange_current_density(self.variables)
         model_p = pybamm.interface.BaseInterface(param, "Positive", "lead-acid main")
@@ -57,7 +57,7 @@ class TestMainReaction(unittest.TestCase):
 
     def test_discretisation_main_reaction(self):
         # With intercalation
-        param = pybamm.standard_parameters_lead_acid
+        param = pybamm.LeadAcidParameters()
         model_n = pybamm.interface.BaseInterface(param, "Negative", "lead-acid main")
         j0_n = model_n._get_exchange_current_density(self.variables)
         model_p = pybamm.interface.BaseInterface(param, "Positive", "lead-acid main")
@@ -80,7 +80,7 @@ class TestMainReaction(unittest.TestCase):
 
     def test_diff_main_reaction(self):
         # With intercalation
-        param = pybamm.standard_parameters_lead_acid
+        param = pybamm.LeadAcidParameters()
         model_n = pybamm.interface.BaseInterface(param, "Negative", "lead-acid main")
         model_p = pybamm.interface.BaseInterface(param, "Positive", "lead-acid main")
         parameter_values = pybamm.lead_acid.BaseModel().default_parameter_values
@@ -104,14 +104,14 @@ class TestMainReaction(unittest.TestCase):
         j0_n_FD = parameter_values.process_symbol(
             (j0_n(c_e + h) - j0_n(c_e - h)) / (2 * h)
         )
-        self.assertAlmostEqual(
+        np.testing.assert_almost_equal(
             j0_n_diff.evaluate(inputs={"c_e": 0.5}),
             j0_n_FD.evaluate(inputs={"c_e": 0.5}),
         )
         j0_p_FD = parameter_values.process_symbol(
             (j0_p(c_e + h) - j0_p(c_e - h)) / (2 * h)
         )
-        self.assertAlmostEqual(
+        np.testing.assert_almost_equal(
             j0_p_diff.evaluate(inputs={"c_e": 0.5}),
             j0_p_FD.evaluate(inputs={"c_e": 0.5}),
         )

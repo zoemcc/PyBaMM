@@ -16,9 +16,14 @@ model.variables = {
 }
 
 sim = pybamm.Simulation(model)
+<<<<<<< HEAD
 sim.interactive(
     {"Current function [A]": 0.5},
     quick_plot_vars=["v", "2v", "3v", "4v", "5v", "6v", "7v", "8v"],
 )
 # sim.solve()
 # sim.plot()
+=======
+sim.solve([0, 3600])
+sim.plot()
+>>>>>>> develop
