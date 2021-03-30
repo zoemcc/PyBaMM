@@ -1,8 +1,9 @@
 import pybamm
 
-model = pybamm.BaseBatteryModel()
+model = pybamm.BaseModel()
 v = pybamm.Variable("v")
-model.rhs = {v: -1}
+p = pybamm.InputParameter("p")
+model.rhs = {v: -p}
 model.initial_conditions = {v: 1}
 model.variables = {
     "v": v,
@@ -16,14 +17,10 @@ model.variables = {
 }
 
 sim = pybamm.Simulation(model)
-<<<<<<< HEAD
 sim.interactive(
-    {"Current function [A]": 0.5},
-    quick_plot_vars=["v", "2v", "3v", "4v", "5v", "6v", "7v", "8v"],
+    [0, 3600],
+    inputs={"p": 0.5},
+    plot_kwargs={"output_variables": ["v", "2v", "3v", "4v", "5v", "6v", "7v", "8v"]},
 )
 # sim.solve()
 # sim.plot()
-=======
-sim.solve([0, 3600])
-sim.plot()
->>>>>>> develop

@@ -21,9 +21,11 @@ class InteractivePlot(pybamm.QuickPlot):
     **Extends**: :class:`pybamm.QuickPlot`
     """
 
-    def __init__(self, sim, initial_inputs, **kwargs):
-        super().__init__(sim.solution, **kwargs)
-        self.initial_inputs = initial_inputs
+    def __init__(self, sim, **kwargs):
+        sol = sim.solution
+        super().__init__(sol, **kwargs)
+        self.sim = sim
+        self.inputs = sol.all_inputs[0]
 
         # Legend for the full figure
         self.fig_legend_location = "upper right"
@@ -34,25 +36,33 @@ class InteractivePlot(pybamm.QuickPlot):
         control the inputs. We recommend using ipywidgets instead of this function if
         you are using jupyter notebooks
         """
+        if pybamm.is_notebook():  # pragma: no cover
+            raise NotImplementedError(
+                "Interactive plot is not implemented for notebooks"
+            )
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider, TextBox, Button
 
         # create an initial plot at time 0
+        self.slider_top = 0.05
+        self.right = 0.85
         self.plot(0)
 
         # Slider
         axcolor = "lightgoldenrodyellow"
         ax_slider = plt.axes([0.315, 0.02, 0.37, 0.03], facecolor=axcolor)
-        self.slider = Slider(ax_slider, "Time", 0, self.max_t, valinit=0)
-        self.slider.on_changed(self.update)
+        self.slider = Slider(
+            ax_slider, "Time", 0, self.max_t, valinit=0, color="#1f77b4"
+        )
+        self.slider.on_changed(self.slider_update)
 
         # Text boxes
         self.text_boxes = {}
-        for k, (input_name, value) in enumerate(self.initial_inputs.items()):
+        for k, (input_name, value) in enumerate(self.inputs.items()):
             ax_box = plt.axes([0.9, k * 0.1 + 0.1, 0.08, 0.03])
             self.text_boxes[input_name] = TextBox(
-                ax_box, input_name, initial=str(value)
+                ax_box, input_name, initial=str(value[0])
             )
             self.text_boxes[input_name].on_submit(SubmitText(self, input_name))
 
@@ -82,13 +92,17 @@ class InteractivePlot(pybamm.QuickPlot):
 class SubmitText(object):
     def __init__(self, plot, input_name):
         self.plot = plot
+        self.sim = self.plot.sim
         self.input_name = input_name
 
     def __call__(self, value):
-        self.plot.inputs[self.input_name] = value
-        # Run the simulation with new inputs
-        self.sim.solve(inputs=self.plot.inputs)
+        self.plot.inputs[self.input_name] = float(value)
 
+        # Run the simulation with new inputs
+        sol = self.sim.solve(self.plot.ts_seconds[0], inputs=self.plot.inputs)
+        self.plot.set_output_variables(self.plot.output_variable_tuples, [sol])
+        self.plot.reset_axis()
+        self.plot.plot(0)
         # Update legend
         # Update external file with the parameter values
         # Update text on screen (success, failure, see terminal for more detail)

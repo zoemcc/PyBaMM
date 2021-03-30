@@ -805,31 +805,21 @@ class Simulation:
 
         return self._solution
 
-    def interactive(self, inputs, quick_plot_vars=None, testing=False, **kwargs):
+    def interactive(self, t_eval, plot_kwargs=None, **solve_kwargs):
         """
         Create an interactive simulation and plot.
         This creates a :class:`pybamm.InteractivePlot` object.
         """
-        # Convert string to list
-        if isinstance(inputs, str):
-            inputs = [inputs]
-        # Set the specified inputs, while saving initial inputs to initialize the
-        # interactive plot
-        initial_inputs = {}
-        for inp in inputs:
-            initial_inputs[inp] = self.parameter_values[inp]
-            self.parameter_values[inp] = "[input]"
+        plot_kwargs = plot_kwargs or {}
 
         # Solve with initial inputs
-        self.solve(inputs=initial_inputs, **kwargs)
+        self.solve(t_eval, **solve_kwargs)
 
         # Call an interactive plot
-        plot = pybamm.InteractivePlot(
-            self, initial_inputs, output_variables=quick_plot_vars
-        )
+        plot = pybamm.InteractivePlot(self, **plot_kwargs)
 
         # Plot
-        plot.dynamic_plot(testing=testing)
+        plot.dynamic_plot(testing=plot_kwargs.get("testing", False))
 
     def plot(self, output_variables=None, quick_plot_vars=None, **kwargs):
         """
