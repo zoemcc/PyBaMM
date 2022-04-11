@@ -883,6 +883,14 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             mtk_str += f" {param.name}"
     mtk_str += "\n"
 
+    # Define dict from variable to pybamm name
+    mtk_str += "independent_variables_to_pybamm_names = Dict(\n"
+    mtk_str += "  :t => \"Time\",\n"
+    for domain_name, domain_symbol in domain_name_to_symbol.items():
+        if domain_name_to_limits[domain_name] is not None:
+            mtk_str += f"  :{domain_symbol} => \"{domain_name[0]}\",\n"
+    mtk_str += ")\n"
+
     # Add a comment with the variable names
     for var in variables:
         mtk_str += f"# '{var.name}' -> {variable_id_to_print_name[var.id]}\n"
@@ -894,6 +902,12 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         dep_var = variable_id_to_print_name[var.id] + var_to_ind_vars[var.id]
         dep_vars.append(dep_var)
     mtk_str += "\n"
+
+    # Define dict from variable to pybamm name
+    mtk_str += "dependent_variables_to_pybamm_names = Dict(\n"
+    for var in variables:
+        mtk_str += f"  :{variable_id_to_print_name[var.id]} => \"{var.name}\",\n"
+    mtk_str += ")\n"
 
     # Define derivatives
     for domain_symbol in ind_vars:
@@ -1085,9 +1099,13 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
 
         name = model.name.replace(" ", "_").replace("-", "_")
         mtk_str += (
-            name
-            + "_pde_system = PDESystem(eqs, ics_bcs, domains, ind_vars, dep_vars)\n\n"
+            "@named " + name
+            + "_pde_system = PDESystem(eqs, ics_bcs, domains, ind_vars, dep_vars)\n"
         )
+        mtk_str += (
+            "pde_system = " + name + "_pde_system\n\n"
+        )
+
 
     # Replace parameters in the julia strings in the form "inputs[name]"
     # with just "name"
