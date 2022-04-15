@@ -884,7 +884,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             mtk_str += f" {param.name}"
     mtk_str += "\n"
 
-    # Define dict from variable to pybamm name
+    # Define dict from independent variable to pybamm name
     mtk_str += "independent_variables_to_pybamm_names = Dict(\n"
     mtk_str += "  :t => \"Time\",\n"
     for domain_name, domain_symbol in domain_name_to_symbol.items():
@@ -904,10 +904,22 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         dep_vars.append(dep_var)
     mtk_str += "\n"
 
-    # Define dict from variable to pybamm name
+    # Define dict from dependent variable to pybamm name
     mtk_str += "dependent_variables_to_pybamm_names = Dict(\n"
     for var in variables:
         mtk_str += f"  :{variable_id_to_print_name[var.id]} => \"{var.name}\",\n"
+    mtk_str += ")\n"
+
+    # Define dict from dependent variable to its dependencies
+    mtk_str += "dependent_variables_to_dependencies = Dict(\n"
+    for var in variables:
+        dependencies = var_to_ind_vars[var.id].strip("()").split(", ")
+        dependencies_symbol = [":" + dep_i for dep_i in dependencies]
+        if len(dependencies) == 1:
+            full_dependencies_symbols = "(" + dependencies_symbol[0] + ",)"
+        else:
+            full_dependencies_symbols = "(" + ", ".join(dependencies_symbol) + ")"
+        mtk_str += f"  :{variable_id_to_print_name[var.id]} => {full_dependencies_symbols},\n"
     mtk_str += ")\n"
 
     # Define derivatives
