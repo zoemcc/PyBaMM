@@ -1048,6 +1048,12 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             cache_var_id, julia_id + var_to_ind_vars[var_id]
         )
 
+    # Replace const_123456789 with cache_123456789, 
+    # since all_ic_bc_str thinks they're const and not cache
+    if "const_" in all_ic_bc_str:
+        all_ic_bc_str = all_ic_bc_str.replace("const_", "cache_")
+
+
     ####################################################################################
 
     # Create ODESystem or PDESystem
