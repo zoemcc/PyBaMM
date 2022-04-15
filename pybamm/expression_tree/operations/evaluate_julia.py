@@ -866,6 +866,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             ] = f"(t, {limits[1]}{aux_domain_symbols})"
 
     mtk_str = "begin\n"
+    mtk_str += "using IfElse\n" # hard coded always for now
     # Define parameters (including independent variables)
     # Makes a line of the form '@parameters t x1 x2 x3 a b c d'
     ind_vars = ["t"] + [
@@ -969,15 +970,6 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 f"div_{domain_name}(",
                 f"1 / {domain_symbol}^2 * D{domain_symbol}({domain_symbol}^2 * ",
             )
-
-    # Replace the thicknesses in the concatenation with the actual thickness from the
-    # geometry
-    if "neg_width" in all_julia_str or "neg_plus_sep_width" in all_julia_str:
-        var = pybamm.standard_spatial_vars
-        x_n = geometry["negative electrode"]["x_n"]["max"].evaluate()
-        x_s = geometry["separator"]["x_s"]["max"].evaluate()
-        all_julia_str = all_julia_str.replace("neg_width", str(x_n))
-        all_julia_str = all_julia_str.replace("neg_plus_sep_width", str(x_s))
 
     # Update the MTK string
     mtk_str += all_constants_str + all_julia_str + "\n" + f"eqs = [\n{all_eqns_str}]\n"
@@ -1106,6 +1098,14 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             "pde_system = " + name + "_pde_system\n\n"
         )
 
+    # Replace the thicknesses in the concatenation with the actual thickness from the
+    # geometry
+    if "neg_width" in mtk_str or "neg_plus_sep_width" in mtk_str:
+        var = pybamm.standard_spatial_vars
+        x_n = geometry["negative electrode"]["x_n"]["max"].evaluate()
+        x_s = geometry["separator"]["x_s"]["max"].evaluate()
+        mtk_str = mtk_str.replace("neg_width", str(x_n))
+        mtk_str = mtk_str.replace("neg_plus_sep_width", str(x_s))
 
     # Replace parameters in the julia strings in the form "inputs[name]"
     # with just "name"
