@@ -984,7 +984,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             )
 
     # Update the MTK string
-    mtk_str += all_constants_str + all_julia_str + "\n" + f"eqs = [\n{all_eqns_str}]\n"
+    mtk_str += all_constants_str + all_julia_str + "\n" + f"eqs = [\n{all_eqns_str}]\n\n"
 
     ####################################################################################
     # Initial and boundary conditions
@@ -1108,7 +1108,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             if limits is not None:
                 mtk_str += f"{symbol}_domain = Interval{limits}\n"
                 domains += f"   {symbol} in {symbol}_domain,\n"
-        domains += "]\n"
+        domains += "]\n\n"
 
         mtk_str += "\n"
         mtk_str += domains
