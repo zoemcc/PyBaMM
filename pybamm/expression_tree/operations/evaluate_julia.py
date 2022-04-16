@@ -261,7 +261,7 @@ def find_symbols(
         else:
             # A regular Concatenation for the MTK model
             # We will define the concatenation function separately
-            symbol_str = "concatenation(" + ", ".join(children_vars) + ")"
+            symbol_str = "concatenation(x, " + ", ".join(children_vars) + ")"
 
     # Note: we assume that y is being passed as a column vector
     elif isinstance(symbol, pybamm.StateVectorBase):
@@ -691,7 +691,7 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
     # Hardcoded to the negative electrode, separator, positive electrode case for now
     if "concatenation" in var_str and "function concatenation" not in all_variables_str:
         concatenation_def = (
-            "\nfunction concatenation(n, s, p)\n"
+            "\nfunction concatenation(x, n, s, p)\n"
             + "   # A concatenation in the electrolyte domain\n"
             + "   IfElse.ifelse(\n"
             + "      x < neg_width, n, IfElse.ifelse(\n"
@@ -992,7 +992,13 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     # Initial conditions
     all_ic_bc_str = "   # initial conditions\n"
     all_ic_bc_constants_str = ""
-    all_ic_bc_julia_str = ""
+    # Use this as a placeholder so that the ics and bcs don't repeat the 
+    # concatenation function definition if it has already been defined,
+    # since the existence of this string determines whether or not to repeat it
+    if "function concatenation" in all_julia_str:
+        all_ic_bc_julia_str = "function concatenation"
+    else:
+        all_ic_bc_julia_str = ""
     for var, eqn in model.initial_conditions.items():
         (
             all_ic_bc_constants_str,
@@ -1064,6 +1070,10 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     # since all_ic_bc_str thinks they're const and not cache
     if "const_" in all_ic_bc_str:
         all_ic_bc_str = all_ic_bc_str.replace("const_", "cache_")
+
+    # Remove the leading function concatenation string if it was added
+    if "function concatenation" in all_julia_str:
+        all_ic_bc_julia_str = all_ic_bc_julia_str.lstrip("function concatenation")
 
 
     ####################################################################################
