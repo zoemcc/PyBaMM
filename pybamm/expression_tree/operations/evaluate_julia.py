@@ -796,7 +796,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             raise ValueError("must provide tspan if the model is a PDE model")
 
     # Read domain names
-    domain_name_to_symbol = {}
+    unordered_domain_name_to_symbol = {}
     long_domain_symbol_to_short = {}
     for dom in all_domains:
         # Read domain name from geometry
@@ -804,14 +804,24 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         if len(dom) > 1:
             domain_symbol = domain_symbol[0]
             # For multi-domain variables keep only the first letter of the domain
-            domain_name_to_symbol[tuple(dom)] = domain_symbol
+            unordered_domain_name_to_symbol[tuple(dom)] = domain_symbol
             # Record which domain symbols we shortened
             for d in dom:
                 long = list(geometry[d].keys())[0]
                 long_domain_symbol_to_short[long] = domain_symbol
         else:
             # Otherwise keep the whole domain
-            domain_name_to_symbol[tuple(dom)] = domain_symbol
+            unordered_domain_name_to_symbol[tuple(dom)] = domain_symbol
+    
+    # Sort the domain_name_to_symbol so that the ind_vars are always in the same order
+    sorted_domain_name_symbol_pairs = [
+        (dom, sym)
+        for dom, sym in unordered_domain_name_to_symbol.items()
+    ]
+    sorted_domain_name_symbol_pairs.sort(key=lambda y: y[1])
+    domain_name_to_symbol = OrderedDict()
+    for (dom, sym) in sorted_domain_name_symbol_pairs:
+        domain_name_to_symbol[dom] = sym
 
     # Read domain limits
     domain_name_to_limits = {(): None}
