@@ -25,6 +25,7 @@ class Full(BaseElectrolyteDiffusion):
         super().__init__(param, options)
 
     def get_fundamental_variables(self):
+        """
         if self.half_cell:
             eps_c_e_n = None
         else:
@@ -35,11 +36,22 @@ class Full(BaseElectrolyteDiffusion):
         variables = self._get_standard_porosity_times_concentration_variables(
             eps_c_e_n, eps_c_e_s, eps_c_e_p
         )
+        """
+
+        if self.half_cell:
+            c_e_n = None
+        else:
+            c_e_n = pybamm.standard_variables.c_e_n
+        c_e_s = pybamm.standard_variables.c_e_s
+        c_e_p = pybamm.standard_variables.c_e_p
+
+        variables = self._get_standard_concentration_variables(c_e_n, c_e_s, c_e_p)
 
         return variables
 
     def get_coupled_variables(self, variables):
 
+        """
         if self.half_cell:
             c_e_n = None
         else:
@@ -56,6 +68,25 @@ class Full(BaseElectrolyteDiffusion):
 
         variables.update(
             self._get_standard_concentration_variables(c_e_n, c_e_s, c_e_p)
+        )
+        """
+
+        if self.half_cell:
+            eps_c_e_n = None
+        else:
+            eps_n = variables["Negative electrode porosity"]
+            c_e_n = variables["Negative electrolyte concentration"]
+            eps_c_e_n = c_e_n * eps_n
+
+        eps_s = variables["Separator porosity"]
+        eps_p = variables["Positive electrode porosity"]
+        c_e_s = variables["Separator electrolyte concentration"]
+        c_e_p = variables["Positive electrolyte concentration"]
+        eps_c_e_s = c_e_s * eps_s
+        eps_c_e_p = c_e_p * eps_p
+
+        variables.update(
+            self._get_standard_porosity_times_concentration_variables(eps_c_e_n, eps_c_e_s, eps_c_e_p)
         )
 
         eps_c_e = variables["Porosity times concentration"]
@@ -92,20 +123,24 @@ class Full(BaseElectrolyteDiffusion):
         source_terms = sum_s_j / self.param.gamma_e
 
         self.rhs = {
-            eps_c_e: -pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox
+            c_e: -pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox # I think this is fine???
+            #eps_c_e: -pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox
         }
 
     def set_initial_conditions(self, variables):
 
-        eps_c_e = variables["Porosity times concentration"]
+        #eps_c_e = variables["Porosity times concentration"]
+        c_e = variables["Electrolyte concentration"]
 
         self.initial_conditions = {
-            eps_c_e: self.param.epsilon_init * self.param.c_e_init
+            #eps_c_e: self.param.epsilon_init * self.param.c_e_init
+            c_e: self.param.c_e_init
         }
 
     def set_boundary_conditions(self, variables):
         param = self.param
         c_e = variables["Electrolyte concentration"]
+        eps_c_e = variables["Porosity times concentration"]
 
         if self.half_cell:
             # left bc at anode/separator interface
@@ -113,9 +148,11 @@ class Full(BaseElectrolyteDiffusion):
             T = variables["Cell temperature"]
             tor = variables["Electrolyte transport efficiency"]
             i_boundary_cc = variables["Current collector current density"]
+            #eps_s = variables["Separator porosity"]
             lbc = (
                 pybamm.boundary_value(
                     -(1 - param.t_plus(c_e, T))
+                    #/ (tor * param.gamma_e * param.D_e(c_e, T) * eps_s),
                     / (tor * param.gamma_e * param.D_e(c_e, T)),
                     "left",
                 )
@@ -127,5 +164,6 @@ class Full(BaseElectrolyteDiffusion):
             lbc = pybamm.Scalar(0)
 
         self.boundary_conditions = {
+            #eps_c_e: {"left": (pybamm.Scalar(0), "Neumann"), "right": (pybamm.Scalar(0), "Neumann")},
             c_e: {"left": (lbc, "Neumann"), "right": (pybamm.Scalar(0), "Neumann")},
         }

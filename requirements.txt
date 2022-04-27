@@ -10,6 +10,8 @@ julia>=0.5.6
 jupyter  # For example notebooks
 pybtex
 sympy==1.9
+icecream
+rich
 # Note: Matplotlib is loaded for debug plots but to ensure pybamm runs
 # on systems without an attached display it should never be imported
 # outside of plot() methods.
