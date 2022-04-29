@@ -113,6 +113,7 @@ class Full(BaseElectrolyteDiffusion):
 
         param = self.param
 
+        eps = variables["Porosity"]
         eps_c_e = variables["Porosity times concentration"]
         c_e = variables["Electrolyte concentration"]
         N_e = variables["Electrolyte flux"]
@@ -123,7 +124,7 @@ class Full(BaseElectrolyteDiffusion):
         source_terms = sum_s_j / self.param.gamma_e
 
         self.rhs = {
-            c_e: -pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox # I think this is fine???
+            c_e: (-pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox) / eps # I think this is fine???
             #eps_c_e: -pybamm.div(N_e) / param.C_e + source_terms - c_e * div_Vbox
         }
 
