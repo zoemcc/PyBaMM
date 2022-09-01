@@ -896,6 +896,27 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         for dom, sym in unordered_domain_name_to_symbol.items()
     ]
     sorted_domain_name_symbol_pairs.sort(key=lambda y: y[1])
+    sorted_domain_name_symbol_pairs_sepfirst = []
+    for (i, (dom, sym)) in enumerate(sorted_domain_name_symbol_pairs):
+        if i == 0:
+            sorted_domain_name_symbol_pairs_sepfirst.append((dom, sym))
+        else:
+            prevdom, prevsym = sorted_domain_name_symbol_pairs[i-1]
+            if sym[-2:] == "_s": 
+                if prevsym[-2:] == "_p":
+                    sorted_domain_name_symbol_pairs_sepfirst.append((dom, sym))
+                    sorted_domain_name_symbol_pairs_sepfirst.append((prevdom, prevsym))
+                else:
+                    sorted_domain_name_symbol_pairs_sepfirst.append((prevdom, prevsym))
+                    sorted_domain_name_symbol_pairs_sepfirst.append((dom, sym))
+            elif sym[-2:] == "_p":
+                pass
+            else:
+                if prevsym[-2:] == "_p":
+                    sorted_domain_name_symbol_pairs_sepfirst.append((prevdom, prevsym))
+                sorted_domain_name_symbol_pairs_sepfirst.append((dom, sym))
+            
+    sorted_domain_name_symbol_pairs = sorted_domain_name_symbol_pairs_sepfirst
     domain_name_to_symbol = OrderedDict()
     for (dom, sym) in sorted_domain_name_symbol_pairs:
         domain_name_to_symbol[dom] = sym
