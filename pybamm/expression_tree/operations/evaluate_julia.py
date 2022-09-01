@@ -909,7 +909,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 else:
                     sorted_domain_name_symbol_pairs_sepfirst.append((prevdom, prevsym))
                     sorted_domain_name_symbol_pairs_sepfirst.append((dom, sym))
-            elif sym[-2:] == "_p":
+            elif sym[-2:] == "_p" and i != len(sorted_domain_name_symbol_pairs)-1:
                 pass
             else:
                 if prevsym[-2:] == "_p":
