@@ -265,7 +265,8 @@ def find_symbols(
         else:
             # A regular Concatenation for the MTK model
             # We will define the concatenation function separately
-            symbol_str = "concatenation(x, " + ", ".join(children_vars) + ")"
+            symbol_str = children_vars
+            #symbol_str = "concatenation(x, " + ", ".join(children_vars) + ")"
 
     # Note: we assume that y is being passed as a column vector
     elif isinstance(symbol, pybamm.StateVectorBase):
@@ -657,14 +658,29 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
     var_str = ""
     while var_symbols:
         var_symbol_id, symbol_line = var_symbols.popitem(last=False)
+        ic(var_symbol_id)
+        ic(symbol_line)
+        ic(type(symbol_line))
         julia_var = id_to_julia_variable(var_symbol_id, "cache")
+        ic(julia_var)
         # inline operation if it can be inlined
-        if "concatenation" not in symbol_line:
+        if not isinstance(symbol_line, list):
+        #if "concatenation" not in symbol_line:
             found_replacement = False
             # replace all other occurrences of the variable
             # in the dictionary with the symbol line
             for next_var_id, next_symbol_line in var_symbols.items():
-                if (
+                ic(next_var_id)
+                ic(next_symbol_line)
+                if isinstance(next_symbol_line, list):
+                    ic(next_symbol_line)
+                    next_symbol_lines_replaced = [next_symbol_line_child.replace(
+                        julia_var, f"\n   {symbol_line}\n") \
+                        for next_symbol_line_child in next_symbol_line
+                    ]
+                    ic(next_symbol_lines_replaced)
+                    var_symbols[next_var_id] = next_symbol_lines_replaced
+                elif (
                     symbol_line == "t"
                     or " " not in symbol_line
                     or symbol_line.startswith("grad")
@@ -689,7 +705,12 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
 
         # otherwise assign
         else:
-            var_str += "{} = {}\n".format(julia_var, symbol_line)
+            ic("is list")
+            domain_addendum = ["_n", "_s", "_p"]
+            for domain_add, symbol_child in zip(domain_addendum, symbol_line):
+                var_str += "{} = {}\n".format(julia_var + domain_add, symbol_child)
+            #var_str += "{} = {}\n".format(julia_var, symbol_line)
+            ic(var_str)
 
     # If we have created a concatenation we need to define it
     # Hardcoded to the negative electrode, separator, positive electrode case for now
@@ -1054,19 +1075,60 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     all_eqns_str = ""
     all_constants_str = ""
     all_julia_str = ""
-    return mtk_str
+    domain_addendum = ["_n", "_s", "_p"]
     for var, eqn in {**model.rhs, **model.algebraic}.items():
+        if isinstance(var, pybamm.ConcatenationVariable):
+            ic("in concat var")
+            ic("varchildren")
+            for child in var.children:
+                ic(child)
+            ic("eqnchildren")
+            for child in eqn.children:
+                ic(child)
+        ic(var)
+        ic(eqn)
         all_constants_str, all_julia_str, eqn_str = convert_var_and_eqn_to_str(
             var, eqn, all_constants_str, all_julia_str, "equation"
         )
 
         if var in model.rhs:
-            all_eqns_str += (
-                f"   Dt({variable_id_to_print_name[var.id]}{var_to_ind_vars[var.id]}) "
-                + f"~ {eqn_str},\n"
-            )
+            ic("rhs var")
+            ic(var)
+            if isinstance(var, pybamm.ConcatenationVariable):
+                ic("in concat var")
+                for child in var.children:
+                    ic(child)
+                    new_eqn_str = (
+                        f"   Dt({variable_id_to_print_name[child.id]}{var_to_ind_vars[child.id]}) "
+                        + f"~ {eqn_str},\n"
+                    )
+                    ic(new_eqn_str)
+
+                    all_eqns_str += new_eqn_str
+            else:
+                ic("in not concat var")
+                new_eqn_str = (
+                    f"   Dt({variable_id_to_print_name[var.id]}{var_to_ind_vars[var.id]}) "
+                    + f"~ {eqn_str},\n"
+                )
+                ic(new_eqn_str)
+
+                all_eqns_str += new_eqn_str
         elif var in model.algebraic:
-            all_eqns_str += f"   0 ~ {eqn_str},\n"
+            ic("algebraic var")
+            ic(var)
+            if isinstance(var, pybamm.ConcatenationVariable):
+                ic("in concat var")
+                for addendum, child in zip(domain_addendum, var.children):
+                    ic(child)
+                    new_eqn_str = f"   0 ~ {eqn_str},\n"
+                    ic(new_eqn_str)
+                    all_eqns_str += new_eqn_str
+            else:
+                ic("in not concat var")
+                new_eqn_str = f"   0 ~ {eqn_str},\n"
+                ic(new_eqn_str)
+                all_eqns_str += new_eqn_str
 
     # Replace any long domain symbols with the short version
     # e.g. "xn" gets replaced with "x"
@@ -1085,9 +1147,17 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 julia_id + var_to_ind_vars_right_boundary[var_id],
             )
         # e.g. cache_123456789 gets replaced with u1(t, x)
-        all_julia_str = all_julia_str.replace(
-            cache_var_id, julia_id + var_to_ind_vars[var_id]
-        )
+        ic(cache_var_id)
+        ic(julia_id)
+        ic(var_id)
+        ic(var_to_ind_vars)
+        ic(variable_id_to_print_name)
+        try:
+            all_julia_str = all_julia_str.replace(
+                cache_var_id, julia_id + var_to_ind_vars[var_id]
+            )
+        except:
+            pass
 
     # Replace independent variables (domain names) in julia strings with the
     # corresponding symbol
@@ -1109,6 +1179,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
 
     # Update the MTK string
     mtk_str += all_constants_str + all_julia_str + "\n" + f"eqs = [\n{all_eqns_str}]\n\n"
+    ic(mtk_str)
 
     ####################################################################################
     # Initial and boundary conditions
@@ -1124,7 +1195,19 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     else:
         all_ic_bc_julia_str = ""
     #ic("ics")
+    ic(model.initial_conditions.items())
+    split_ic_items = []
     for var, eqn in model.initial_conditions.items():
+        if isinstance(var, pybamm.ConcatenationVariable):
+            for child in var.children:
+                split_ic_items.append((child, eqn))
+        else:
+            split_ic_items.append((var, eqn))
+    ic(split_ic_items)
+    #for var, eqn in model.initial_conditions.items():
+    for item in split_ic_items:
+        var, eqn = item
+        #ic(var)
         #ic(type(var))
         #inspect(var)
         #ic(type(eqn))
@@ -1136,12 +1219,18 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         ) = convert_var_and_eqn_to_str(
             var, eqn, all_ic_bc_constants_str, all_ic_bc_julia_str, "initial condition"
         )
+        ic(all_ic_bc_constants_str)
+        ic(all_ic_bc_julia_str)
+        ic(eqn_str)
+        ic(var)
+        #ic(type(model.initial_conditions))
 
         if not is_pde:
             all_ic_bc_str += (
                 f"   {variable_id_to_print_name[var.id]}(t) => {eqn_str},\n"
             )
         else:
+            ic(var.domain)
             if var.domain == []:
                 doms = ""
             else:
@@ -1150,11 +1239,30 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             all_ic_bc_str += (
                 f"   {variable_id_to_print_name[var.id]}(0{doms}) ~ {eqn_str},\n"
             )
+    ic(all_ic_bc_str)
     # Boundary conditions
+    split_bc_items = []
+    for var, eqn in model.boundary_conditions.items():
+        ic(var)
+        ic(eqn)
+        if isinstance(var, pybamm.ConcatenationVariable):
+            #split_bc_items.append((var.children[0], {'left': eqn['left']}))
+            split_bc_items.append((var.children[0], {'left': eqn['left'], 'right': (var.children[1], 'Dirichlet-match')}))
+            split_bc_items.append((var.children[2], {'left': (var.children[1], 'Dirichlet-match'), 'right': eqn['right']}))
+            #for child in var.children:
+                #ic(child)
+                #ic(eqn)
+                #split_bc_items.append((child, eqn))
+        else:
+            split_bc_items.append((var, eqn))
+    ic(split_bc_items)
+    #raise Exception("stop")
     if is_pde:
         all_ic_bc_str += "   # boundary conditions\n"
         #ic("bcs")
-        for var, eqn_side in model.boundary_conditions.items():
+        #for var, eqn_side in model.boundary_conditions.items():
+        for item in split_bc_items:
+            var, eqn_side = item
             #ic(type(var))
             #inspect(var)
             #ic(type(eqn_side))
@@ -1186,10 +1294,14 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                             bc = bc
                         elif typ == "Neumann":
                             bc = f"D{domain_name_to_symbol[tuple(var.domain)]}({bc})"
+                        elif typ == "Dirichlet-match":
+                            eqn_str = f"{variable_id_to_print_name[eqn.id]}{limit}"
                         all_ic_bc_str += f"   {bc} ~ {eqn_str},\n"
                 else:
                     pass
                     #ic("not in boundaries")
+    ic(all_ic_bc_str)
+    #raise Exception("stop")
 
     # Replace variables in the julia strings that correspond to pybamm variables with
     # their julia equivalent
@@ -1202,9 +1314,12 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 julia_id + var_to_ind_vars_right_boundary[var_id],
             )
         # e.g. cache_123456789 gets replaced with u1(t, x)
-        all_ic_bc_julia_str = all_ic_bc_julia_str.replace(
-            cache_var_id, julia_id + var_to_ind_vars[var_id]
-        )
+        try:
+            all_ic_bc_julia_str = all_ic_bc_julia_str.replace(
+                cache_var_id, julia_id + var_to_ind_vars[var_id]
+            )
+        except:
+            pass
 
     # Replace const_123456789 with cache_123456789, 
     # since all_ic_bc_str thinks they're const and not cache
