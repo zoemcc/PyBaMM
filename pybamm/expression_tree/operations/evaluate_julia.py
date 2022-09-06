@@ -1277,21 +1277,21 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     all_julia_str_lines = []
     caches_with_subscripts = re.findall(r"cache_m?[0-9]+_", all_julia_str)
     set_caches_with_subscripts = set(cache_var[:-1] for cache_var in caches_with_subscripts)
-    ic(set_caches_with_subscripts)
+    #ic(set_caches_with_subscripts)
     
     for i, line in enumerate(previous_all_julia_str_lines):
         for add in ["_n", "_s", "_p"]:
             if add in line:
                 # match a regex when the cache variable doesn't end in _
                 matches = re.findall(r"cache_m?[0-9]+(?!_)", line)
-                ic(matches)
+                #ic(matches)
                 for match in matches:
                     if match in set_caches_with_subscripts:
-                        ic(line)
+                        #ic(line)
                         line = line.replace(
                             f"{match}", f"{match}{add}"
                         )
-                        ic(line)
+                        #ic(line)
                 #ic(line)
 
         all_julia_str_lines.append(line)
