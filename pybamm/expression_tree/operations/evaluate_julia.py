@@ -6,6 +6,7 @@ from icecream import ic
 from rich import inspect
 from rich.color import Color
 from IPython import embed
+import re
 
 import numpy as np
 import scipy.sparse
@@ -1137,11 +1138,11 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             #ic(var)
             if isinstance(var, pybamm.ConcatenationVariable):
                 #ic("in concat var")
-                for child in var.children:
+                for addendum, child in zip(domain_addendum, var.children):
                     #ic(child)
                     new_eqn_str = (
                         f"   Dt({variable_id_to_print_name[child.id]}{var_to_ind_vars[child.id]}) "
-                        + f"~ {eqn_str},\n"
+                        + f"~ {eqn_str}{addendum},\n"
                     )
                     #ic(new_eqn_str)
 
@@ -1162,7 +1163,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 #ic("in concat var")
                 for addendum, child in zip(domain_addendum, var.children):
                     #ic(child)
-                    new_eqn_str = f"   0 ~ {eqn_str},\n"
+                    new_eqn_str = f"   0 ~ {eqn_str}{addendum},\n"
                     #ic(new_eqn_str)
                     all_eqns_str += new_eqn_str
             else:
@@ -1268,6 +1269,31 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                             f"{cache_var}", f"{child_print_name}{child_ind_vars}"
                         )
                         #ic(line)
+        all_julia_str_lines.append(line)
+    all_julia_str = "\n".join(all_julia_str_lines)
+
+    # Replace cache_123456789 in the rhs with cache_123456789_n, cache_123456789_s, cache_123456789_p, etc
+    previous_all_julia_str_lines = all_julia_str.splitlines()
+    all_julia_str_lines = []
+    caches_with_subscripts = re.findall(r"cache_m?[0-9]+_", all_julia_str)
+    set_caches_with_subscripts = set(cache_var[:-1] for cache_var in caches_with_subscripts)
+    ic(set_caches_with_subscripts)
+    
+    for i, line in enumerate(previous_all_julia_str_lines):
+        for add in ["_n", "_s", "_p"]:
+            if add in line:
+                # match a regex when the cache variable doesn't end in _
+                matches = re.findall(r"cache_m?[0-9]+(?!_)", line)
+                ic(matches)
+                for match in matches:
+                    if match in set_caches_with_subscripts:
+                        ic(line)
+                        line = line.replace(
+                            f"{match}", f"{match}{add}"
+                        )
+                        ic(line)
+                #ic(line)
+
         all_julia_str_lines.append(line)
     all_julia_str = "\n".join(all_julia_str_lines)
 
