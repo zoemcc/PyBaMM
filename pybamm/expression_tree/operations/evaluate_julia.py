@@ -655,14 +655,17 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
     # If they are simple operations (+, -, *, /), replace all future
     # occurences instead of assigning them.
     inlineable_symbols = [" + ", " - ", " * ", " / "]
+    #ic(typ)
+    #ic(eqn)
+    #ic(var_symbols)
     var_str = ""
     while var_symbols:
         var_symbol_id, symbol_line = var_symbols.popitem(last=False)
-        ic(var_symbol_id)
-        ic(symbol_line)
-        ic(type(symbol_line))
+        #ic(var_symbol_id)
+        #ic(symbol_line)
+        #ic(type(symbol_line))
         julia_var = id_to_julia_variable(var_symbol_id, "cache")
-        ic(julia_var)
+        #ic(julia_var)
         # inline operation if it can be inlined
         if not isinstance(symbol_line, list):
         #if "concatenation" not in symbol_line:
@@ -670,15 +673,15 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
             # replace all other occurrences of the variable
             # in the dictionary with the symbol line
             for next_var_id, next_symbol_line in var_symbols.items():
-                ic(next_var_id)
-                ic(next_symbol_line)
+                #ic(next_var_id)
+                #ic(next_symbol_line)
                 if isinstance(next_symbol_line, list):
-                    ic(next_symbol_line)
+                    #ic(next_symbol_line)
                     next_symbol_lines_replaced = [next_symbol_line_child.replace(
                         julia_var, f"\n   {symbol_line}\n") \
                         for next_symbol_line_child in next_symbol_line
                     ]
-                    ic(next_symbol_lines_replaced)
+                    #ic(next_symbol_lines_replaced)
                     var_symbols[next_var_id] = next_symbol_lines_replaced
                 elif (
                     symbol_line == "t"
@@ -705,12 +708,12 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
 
         # otherwise assign
         else:
-            ic("is list")
+            #ic("is list")
             domain_addendum = ["_n", "_s", "_p"]
             for domain_add, symbol_child in zip(domain_addendum, symbol_line):
                 var_str += "{} = {}\n".format(julia_var + domain_add, symbol_child)
             #var_str += "{} = {}\n".format(julia_var, symbol_line)
-            ic(var_str)
+            #ic(var_str)
 
     # If we have created a concatenation we need to define it
     # Hardcoded to the negative electrode, separator, positive electrode case for now
@@ -811,21 +814,21 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     variable_id_to_print_name = {}
     concat_variable_parent = {}
     for i, var in enumerate(old_variables):
-        ic(i)
-        inspect(var)
+        #ic(i)
+        #inspect(var)
         if var.print_name is not None:
             print_name = var._raw_print_name
         else:
             print_name = f"u{i+1}"
         variable_id_to_print_name[var.id] = print_name
         if isinstance(var, pybamm.ConcatenationVariable):
-            ic("concatenation var")
-            ic(var)
+            #ic("concatenation var")
+            #ic(var)
             for child in var.children:
                 concat_variable_parent[child.id] = var
                 split_dependent_variables.append(child)
-                ic("concatenation child var")
-                ic(child)
+                #ic("concatenation child var")
+                #ic(child)
                 variable_id_to_print_name[child.id] = child._raw_print_name
                 #inspect(child)
         else:
@@ -837,7 +840,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                                 #813215840014778991: 'eps_c_e',
 #...
                                 #8502495241720053573: 'Q_Ah'}
-    ic(split_dependent_variables)
+    #ic(split_dependent_variables)
     variables = split_dependent_variables
 
     # Extract domain and auxiliary domains
@@ -845,8 +848,8 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         [tuple(dom) for var in variables for dom in var.domains.values() if dom != []]
         #[tuple(dom) for var in variables for dom in var.domains.values() if dom != []]
     )
-    ic(all_domains)
-    inspect(all_domains)
+    #ic(all_domains)
+    #inspect(all_domains)
     is_pde = bool(all_domains)
 
     # Check geometry and tspan have been provided if a PDE
@@ -869,26 +872,26 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         if len(dom) > 1:
             domain_symbol_short = domain_symbol[0]
             # For multi-domain variables keep only the first letter of the domain
-            ic("in len(dom)>1")
-            ic(dom)
-            ic(domain_symbol)
+            #ic("in len(dom)>1")
+            #ic(dom)
+            #ic(domain_symbol)
             #unordered_domain_name_to_symbol[tuple(dom)] = domain_symbol
             # Record which domain symbols we shortened
             longs = []
             for d in dom:
                 long = list(geometry[d].keys())[0]
                 unordered_domain_name_to_symbol[d] = long
-                ic(long)
+                #ic(long)
                 longs.append(long)
                 long_domain_symbol_to_short[long] = domain_symbol_short
             short_domain_symbol_to_longs[domain_symbol_short] = tuple(longs)
         else:
             # Otherwise keep the whole domain
-            ic("in not len(dom)>1")
+            #ic("in not len(dom)>1")
             unordered_domain_name_to_symbol[tuple(dom)] = domain_symbol
             short_domain_symbol_to_longs[domain_symbol] = tuple(dom)
-    ic(has_x_variable)
-    ic(short_domain_symbol_to_longs)
+    #ic(has_x_variable)
+    #ic(short_domain_symbol_to_longs)
     
     # Sort the domain_name_to_symbol so that the ind_vars are always in the same order
     sorted_domain_name_symbol_pairs = [
@@ -921,28 +924,28 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     for (dom, sym) in sorted_domain_name_symbol_pairs:
         domain_name_to_symbol[dom] = sym
         #ic(dom, sym)
-    ic(domain_name_to_symbol)
-    inspect(domain_name_to_symbol)
+    #ic(domain_name_to_symbol)
+    #inspect(domain_name_to_symbol)
 
     # Read domain limits
     domain_name_to_limits = {(): None}
     for dom in all_domains:
         limits = list(geometry[dom[0]].values())[0].values()
-        ic(dom)
-        ic(limits)
+        ##ic(dom)
+        #ic(limits)
         if len(limits) > 1:
-            ic(geometry)
-            inspect(geometry)
+            #ic(geometry)
+            #inspect(geometry)
             for d in dom:
-                ic(d)
-                ic(geometry[d])
+                #ic(d)
+                #ic(geometry[d])
                 lower_limit, _ = list(geometry[d].values())[0].values()
                 _, upper_limit = list(geometry[d].values())[0].values()
                 domain_name_to_limits[(d,)] = (
                     lower_limit.evaluate(),
                     upper_limit.evaluate(),
                 )
-                ic(domain_name_to_limits[(d,)])
+                #ic(domain_name_to_limits[(d,)])
         #if len(limits) > 1:
             #lower_limit, _ = list(geometry[dom[0]].values())[0].values()
             #_, upper_limit = list(geometry[dom[-1]].values())[0].values()
@@ -954,8 +957,8 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             # Don't record limits for variables that have "limits" of length 1 i.e.
             # a zero-dimensional domain
             domain_name_to_limits[dom] = None
-    ic(domain_name_to_limits)
-    inspect(domain_name_to_limits)
+    #ic(domain_name_to_limits)
+    #inspect(domain_name_to_limits)
 
     # Define independent variables for each variable
     var_to_ind_vars = {}
@@ -966,14 +969,14 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             var_to_ind_vars[var.id] = "(t)"
         else:
             # all independent variables e.g. (t, x) or (t, rn, xn)
-            ic(var)
-            ic(dom)
-            ic(var.domains.values())
+            #ic(var)
+            #ic(dom)
+            #ic(var.domains.values())
             if isinstance(var, pybamm.ConcatenationVariable):
-                ic("in concat var")
+                #ic("in concat var")
                 for child in var.children:
-                    ic(child)
-                    inspect(child)
+                    #ic(child)
+                    #inspect(child)
                     domain_symbols = ", ".join(
                         domain_name_to_symbol[tuple(dom)]
                         for dom in var.domains.values()
@@ -981,18 +984,18 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                     )
                     var_to_ind_vars[child.id] = f"(t, {domain_symbols})"
             else:
-                ic("in not concat var")
-                ic(tuple(var.domains.values()))
+                #ic("in not concat var")
+                #ic(tuple(var.domains.values()))
                 domain_symbols_list = []
                 for sdom in tuple(var.domains.values()):
-                    ic(sdom)
+                    #ic(sdom)
                     dom_key = tuple(sdom)
-                    ic(dom_key)
+                    #ic(dom_key)
                     if dom_key in domain_name_to_limits and \
                         domain_name_to_limits[dom_key] is not None and \
                         dom_key in domain_name_to_symbol:
 
-                        ic("dom_key in domain_name_to_limits")
+                        #ic("dom_key in domain_name_to_limits")
                         dom_symb = domain_name_to_symbol[dom_key]
                         domain_symbols_list.append(dom_symb)
                 #domain_symbols = ", ".join(
@@ -1000,9 +1003,9 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                     #for sdom in tuple(var.domains.values())
                     #if len(sdom) > 1 and domain_name_to_limits[(sdom[0],)] is not None
                 #)
-                ic(domain_symbols_list)
+                #ic(domain_symbols_list)
                 domain_symbols = ", ".join(domain_symbols_list)
-                ic(domain_symbols)
+                #ic(domain_symbols)
                 var_to_ind_vars[var.id] = f"(t, {domain_symbols})"
             aux_domain_symbols = ", ".join(
                 domain_name_to_symbol[tuple(dom)]
@@ -1012,7 +1015,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             if aux_domain_symbols != "":
                 aux_domain_symbols = ", " + aux_domain_symbols
 
-            ic(var.domain)
+            #ic(var.domain)
             limits = domain_name_to_limits[tuple(var.domain)]
             # left bc e.g. (t, 0) or (t, 0, xn)
             var_to_ind_vars_left_boundary[
@@ -1048,9 +1051,9 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     for domain_name, domain_symbol in domain_name_to_symbol.items():
         if domain_name_to_limits[domain_name] is not None:
             mtk_str += f"  :{domain_symbol} => \"{domain_name[0]}\",\n"
-            ic(domain_symbol)
-            ic(domain_name)
-            inspect(domain_name)
+            #ic(domain_symbol)
+            #ic(domain_name)
+            #inspect(domain_name)
     mtk_str += ")\n"
 
     # Add a comment with the variable names
@@ -1073,12 +1076,12 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
 
     # Define dict from dependent variable to its dependencies
     mtk_str += "dependent_variables_to_dependencies = Dict(\n"
-    ic(var_to_ind_vars)
+    #ic(var_to_ind_vars)
     for var in variables:
-        ic(var)
+        #ic(var)
         dependencies = var_to_ind_vars[var.id].strip("()").split(", ")
-        ic(dependencies)
-        ic(var_to_ind_vars[var.id])
+        #ic(dependencies)
+        #ic(var_to_ind_vars[var.id])
         dependencies_symbol = [":" + dep_i for dep_i in dependencies]
         if len(dependencies) == 1:
             full_dependencies_symbols = "(" + dependencies_symbol[0] + ",)"
@@ -1098,57 +1101,57 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     all_julia_str = ""
     domain_addendum = ["_n", "_s", "_p"]
     for var, eqn in {**model.rhs, **model.algebraic}.items():
-        if isinstance(var, pybamm.ConcatenationVariable):
-            ic("in concat var")
-            ic("varchildren")
-            for child in var.children:
-                ic(child)
-            ic("eqnchildren")
-            for child in eqn.children:
-                ic(child)
-        ic(var)
-        ic(eqn)
+        #if isinstance(var, pybamm.ConcatenationVariable):
+            #ic("in concat var")
+            #ic("varchildren")
+            #for child in var.children:
+                #ic(child)
+            #ic("eqnchildren")
+            #for child in eqn.children:
+                #ic(child)
+        #ic(var)
+        #ic(eqn)
         all_constants_str, all_julia_str, eqn_str = convert_var_and_eqn_to_str(
             var, eqn, all_constants_str, all_julia_str, "equation"
         )
 
         if var in model.rhs:
-            ic("rhs var")
-            ic(var)
+            #ic("rhs var")
+            #ic(var)
             if isinstance(var, pybamm.ConcatenationVariable):
-                ic("in concat var")
+                #ic("in concat var")
                 for child in var.children:
-                    ic(child)
+                    #ic(child)
                     new_eqn_str = (
                         f"   Dt({variable_id_to_print_name[child.id]}{var_to_ind_vars[child.id]}) "
                         + f"~ {eqn_str},\n"
                     )
-                    ic(new_eqn_str)
+                    #ic(new_eqn_str)
 
                     all_eqns_str += new_eqn_str
             else:
-                ic("in not concat var")
+                #ic("in not concat var")
                 new_eqn_str = (
                     f"   Dt({variable_id_to_print_name[var.id]}{var_to_ind_vars[var.id]}) "
                     + f"~ {eqn_str},\n"
                 )
-                ic(new_eqn_str)
+                #ic(new_eqn_str)
 
                 all_eqns_str += new_eqn_str
         elif var in model.algebraic:
-            ic("algebraic var")
-            ic(var)
+            #ic("algebraic var")
+            #ic(var)
             if isinstance(var, pybamm.ConcatenationVariable):
-                ic("in concat var")
+                #ic("in concat var")
                 for addendum, child in zip(domain_addendum, var.children):
-                    ic(child)
+                    #ic(child)
                     new_eqn_str = f"   0 ~ {eqn_str},\n"
-                    ic(new_eqn_str)
+                    #ic(new_eqn_str)
                     all_eqns_str += new_eqn_str
             else:
-                ic("in not concat var")
+                #ic("in not concat var")
                 new_eqn_str = f"   0 ~ {eqn_str},\n"
-                ic(new_eqn_str)
+                #ic(new_eqn_str)
                 all_eqns_str += new_eqn_str
 
     # Replace any long domain symbols with the short version
@@ -1168,11 +1171,11 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 julia_id + var_to_ind_vars_right_boundary[var_id],
             )
         # e.g. cache_123456789 gets replaced with u1(t, x)
-        ic(cache_var_id)
-        ic(julia_id)
-        ic(var_id)
-        ic(var_to_ind_vars)
-        ic(variable_id_to_print_name)
+        #ic(cache_var_id)
+        #ic(julia_id)
+        #ic(var_id)
+        #ic(var_to_ind_vars)
+        #ic(variable_id_to_print_name)
         try:
             all_julia_str = all_julia_str.replace(
                 cache_var_id, julia_id + var_to_ind_vars[var_id]
@@ -1180,9 +1183,38 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         except:
             pass
 
+    full_domain = "('negative electrode', 'separator', 'positive electrode')"
+    ic(full_domain)
+    previous_all_julia_str_lines = all_julia_str.splitlines()
+    all_julia_str_lines = []
+    for i, line in enumerate(previous_all_julia_str_lines):
+        #if full_domain in line:
+            #ic("found full_domain at line:")
+            #ic(i)
+            #ic(line)
+        found = line.find(full_domain)
+        if found != -1:
+            ic("found full_domain at line:")
+            ic(i)
+            ic(line)
+            for sub_domain, add in [("('negative electrode',)", "_n"), ("('separator',)", "_s"), ("('positive electrode',)", "_p")]:
+                line_replaced = line.replace(
+                    f"{full_domain}", f"{sub_domain}"
+                )
+                line_replaced = line_replaced.replace(
+                    f" =", f"{add} ="
+                )
+                ic(line_replaced)
+                all_julia_str_lines.append(line_replaced)
+        else:
+            all_julia_str_lines.append(line)
+    all_julia_str = "\n".join(all_julia_str_lines)
+
     # Replace independent variables (domain names) in julia strings with the
     # corresponding symbol
     for domain_name, domain_symbol in domain_name_to_symbol.items():
+        ic(domain_name)
+        ic(domain_symbol)
         all_julia_str = all_julia_str.replace(
             f"grad_{domain_name}", f"D{domain_symbol}"
         )
@@ -1198,9 +1230,10 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 f"1 / {domain_symbol}^2 * D{domain_symbol}({domain_symbol}^2 * ",
             )
 
+
     # Update the MTK string
     mtk_str += all_constants_str + all_julia_str + "\n" + f"eqs = [\n{all_eqns_str}]\n\n"
-    ic(mtk_str)
+    #ic(mtk_str)
 
     ####################################################################################
     # Initial and boundary conditions
@@ -1216,7 +1249,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     else:
         all_ic_bc_julia_str = ""
     #ic("ics")
-    ic(model.initial_conditions.items())
+    #ic(model.initial_conditions.items())
     split_ic_items = []
     for var, eqn in model.initial_conditions.items():
         if isinstance(var, pybamm.ConcatenationVariable):
@@ -1224,7 +1257,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 split_ic_items.append((child, eqn))
         else:
             split_ic_items.append((var, eqn))
-    ic(split_ic_items)
+    #ic(split_ic_items)
     #for var, eqn in model.initial_conditions.items():
     for item in split_ic_items:
         var, eqn = item
@@ -1240,10 +1273,10 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         ) = convert_var_and_eqn_to_str(
             var, eqn, all_ic_bc_constants_str, all_ic_bc_julia_str, "initial condition"
         )
-        ic(all_ic_bc_constants_str)
-        ic(all_ic_bc_julia_str)
-        ic(eqn_str)
-        ic(var)
+        #ic(all_ic_bc_constants_str)
+        #ic(all_ic_bc_julia_str)
+        #ic(eqn_str)
+        #ic(var)
         #ic(type(model.initial_conditions))
 
         if not is_pde:
@@ -1251,7 +1284,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 f"   {variable_id_to_print_name[var.id]}(t) => {eqn_str},\n"
             )
         else:
-            ic(var.domain)
+            #ic(var.domain)
             if var.domain == []:
                 doms = ""
             else:
@@ -1260,12 +1293,12 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             all_ic_bc_str += (
                 f"   {variable_id_to_print_name[var.id]}(0{doms}) ~ {eqn_str},\n"
             )
-    ic(all_ic_bc_str)
+    #ic(all_ic_bc_str)
     # Boundary conditions
     split_bc_items = []
     for var, eqn in model.boundary_conditions.items():
-        ic(var)
-        ic(eqn)
+        #ic(var)
+        #ic(eqn)
         if isinstance(var, pybamm.ConcatenationVariable):
             #split_bc_items.append((var.children[0], {'left': eqn['left']}))
             split_bc_items.append((var.children[0], {'left': eqn['left'], 'right': (var.children[1], 'Dirichlet-match')}))
@@ -1276,7 +1309,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 #split_bc_items.append((child, eqn))
         else:
             split_bc_items.append((var, eqn))
-    ic(split_bc_items)
+    #ic(split_bc_items)
     #raise Exception("stop")
     if is_pde:
         all_ic_bc_str += "   # boundary conditions\n"
@@ -1321,7 +1354,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 else:
                     pass
                     #ic("not in boundaries")
-    ic(all_ic_bc_str)
+    #ic(all_ic_bc_str)
     #raise Exception("stop")
 
     # Replace variables in the julia strings that correspond to pybamm variables with
