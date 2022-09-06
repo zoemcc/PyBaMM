@@ -293,7 +293,11 @@ def find_symbols(
         symbol_str = symbol.name
 
     elif isinstance(symbol, pybamm.FunctionParameter):
-        symbol_str = "{}({})".format(symbol.name, ", ".join(children_vars))
+        name = symbol.name.lstrip("\\")
+        if "\\" in symbol.name:
+            ic(symbol.name)
+            ic(name)
+        symbol_str = "{}({})".format(name, ", ".join(children_vars))
 
     else:
         raise NotImplementedError(
@@ -734,18 +738,24 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
     # Define the FunctionParameter objects that have not yet been defined
     function_defs = ""
     for x in eqn.pre_order():
+        name = x.name.lstrip("\\")
+        if "\\" in x.name:
+            ic(x.name)
+            ic(name)
         if (
             isinstance(x, pybamm.FunctionParameter)
-            and f"function {x.name}" not in all_variables_str
+            and f"function {name}" not in all_variables_str
             and typ == "equation"
         ):
+            ic(name)
             function_def = (
-                f"\nfunction {x.name}("
+                f"\nfunction {name}("
                 + ", ".join(x.arg_names)
                 + ")\n"
                 + "   {}\n".format(str(x.callable).replace("**", "^"))
                 + "end\n"
             )
+            ic(function_def)
             function_defs += function_def
 
     if concatenation_def + function_defs != "":
@@ -1184,7 +1194,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             pass
 
     full_domain = "('negative electrode', 'separator', 'positive electrode')"
-    ic(full_domain)
+    #ic(full_domain)
     previous_all_julia_str_lines = all_julia_str.splitlines()
     all_julia_str_lines = []
     for i, line in enumerate(previous_all_julia_str_lines):
@@ -1194,9 +1204,9 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             #ic(line)
         found = line.find(full_domain)
         if found != -1:
-            ic("found full_domain at line:")
-            ic(i)
-            ic(line)
+            #ic("found full_domain at line:")
+            #ic(i)
+            #ic(line)
             for sub_domain, add in [("('negative electrode',)", "_n"), ("('separator',)", "_s"), ("('positive electrode',)", "_p")]:
                 line_replaced = line.replace(
                     f"{full_domain}", f"{sub_domain}"
@@ -1204,7 +1214,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 line_replaced = line_replaced.replace(
                     f" =", f"{add} ="
                 )
-                ic(line_replaced)
+                #ic(line_replaced)
                 all_julia_str_lines.append(line_replaced)
         else:
             all_julia_str_lines.append(line)
@@ -1213,8 +1223,8 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     # Replace independent variables (domain names) in julia strings with the
     # corresponding symbol
     for domain_name, domain_symbol in domain_name_to_symbol.items():
-        ic(domain_name)
-        ic(domain_symbol)
+        #ic(domain_name)
+        #ic(domain_symbol)
         all_julia_str = all_julia_str.replace(
             f"grad_{domain_name}", f"D{domain_symbol}"
         )
