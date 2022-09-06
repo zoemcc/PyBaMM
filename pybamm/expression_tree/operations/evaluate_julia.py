@@ -293,10 +293,8 @@ def find_symbols(
         symbol_str = symbol.name
 
     elif isinstance(symbol, pybamm.FunctionParameter):
+        # replace \\kappa with kappa, etc
         name = symbol.name.lstrip("\\")
-        if "\\" in symbol.name:
-            ic(symbol.name)
-            ic(name)
         symbol_str = "{}({})".format(name, ", ".join(children_vars))
 
     else:
@@ -738,16 +736,14 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
     # Define the FunctionParameter objects that have not yet been defined
     function_defs = ""
     for x in eqn.pre_order():
+        # replace \\kappa with kappa, etc
         name = x.name.lstrip("\\")
-        if "\\" in x.name:
-            ic(x.name)
-            ic(name)
         if (
             isinstance(x, pybamm.FunctionParameter)
             and f"function {name}" not in all_variables_str
             and typ == "equation"
         ):
-            ic(name)
+            #ic(name)
             function_def = (
                 f"\nfunction {name}("
                 + ", ".join(x.arg_names)
@@ -755,7 +751,7 @@ def convert_var_and_eqn_to_str(var, eqn, all_constants_str, all_variables_str, t
                 + "   {}\n".format(str(x.callable).replace("**", "^"))
                 + "end\n"
             )
-            ic(function_def)
+            #ic(function_def)
             function_defs += function_def
 
     if concatenation_def + function_defs != "":
@@ -822,7 +818,9 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     #inspect(variables)
     split_dependent_variables = []
     variable_id_to_print_name = {}
+    concat_variable_cache_name_to_print_name = {}
     concat_variable_parent = {}
+    variable_print_name_to_id = {}
     for i, var in enumerate(old_variables):
         #ic(i)
         #inspect(var)
@@ -831,15 +829,22 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
         else:
             print_name = f"u{i+1}"
         variable_id_to_print_name[var.id] = print_name
+        variable_print_name_to_id[print_name] = var.id
         if isinstance(var, pybamm.ConcatenationVariable):
             #ic("concatenation var")
             #ic(var)
+            #ic(var.id)
+            var_cache = id_to_julia_variable(var.id, "cache")
+            #ic(var_cache)
+            #ic(print_name)
+            concat_variable_cache_name_to_print_name[var_cache] = print_name
             for child in var.children:
                 concat_variable_parent[child.id] = var
                 split_dependent_variables.append(child)
                 #ic("concatenation child var")
                 #ic(child)
                 variable_id_to_print_name[child.id] = child._raw_print_name
+                variable_print_name_to_id[child._raw_print_name] = child.id
                 #inspect(child)
         else:
             concat_variable_parent[var.id] = None
@@ -852,6 +857,8 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                                 #8502495241720053573: 'Q_Ah'}
     #ic(split_dependent_variables)
     variables = split_dependent_variables
+    #ic(concat_variable_cache_name_to_print_name)
+    #ic(variable_print_name_to_id)
 
     # Extract domain and auxiliary domains
     all_domains = set(
@@ -1239,6 +1246,32 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 f"div_{domain_name}(",
                 f"1 / {domain_symbol}^2 * D{domain_symbol}({domain_symbol}^2 * ",
             )
+    
+    # Replace cache_123456789 for the concatenated variable phi_e with phi_e_n, phi_e_s, phi_e_p, etc
+    previous_all_julia_str_lines = all_julia_str.splitlines()
+    all_julia_str_lines = []
+    
+    for i, line in enumerate(previous_all_julia_str_lines):
+        for add in ["_n", "_s", "_p"]:
+            if add in line:
+                for cache_var in concat_variable_cache_name_to_print_name.keys():
+                    if cache_var in line:
+                        #ic(cache_var)
+                        #ic(line)
+                        child_print_name = concat_variable_cache_name_to_print_name[cache_var] + add
+                        #ic(child_print_name)
+                        child_id = variable_print_name_to_id[child_print_name]
+                        #ic(child_id)
+                        child_ind_vars = var_to_ind_vars[child_id]
+                        #ic(child_ind_vars)
+                        line = line.replace(
+                            f"{cache_var}", f"{child_print_name}{child_ind_vars}"
+                        )
+                        #ic(line)
+        all_julia_str_lines.append(line)
+    all_julia_str = "\n".join(all_julia_str_lines)
+
+
 
 
     # Update the MTK string
