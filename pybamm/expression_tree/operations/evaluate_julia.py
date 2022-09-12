@@ -1118,6 +1118,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
     all_constants_str = ""
     all_julia_str = ""
     domain_addendum = ["_n", "_s", "_p"]
+    non_algebraic_vars = set()
     for var, eqn in {**model.rhs, **model.algebraic}.items():
         #if isinstance(var, pybamm.ConcatenationVariable):
             #ic("in concat var")
@@ -1145,6 +1146,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                         + f"~ {eqn_str}{addendum},\n"
                     )
                     #ic(new_eqn_str)
+                    non_algebraic_vars.add(child.id)
 
                     all_eqns_str += new_eqn_str
             else:
@@ -1153,6 +1155,7 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                     f"   Dt({variable_id_to_print_name[var.id]}{var_to_ind_vars[var.id]}) "
                     + f"~ {eqn_str},\n"
                 )
+                non_algebraic_vars.add(var.id)
                 #ic(new_eqn_str)
 
                 all_eqns_str += new_eqn_str
@@ -1171,6 +1174,8 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
                 new_eqn_str = f"   0 ~ {eqn_str},\n"
                 #ic(new_eqn_str)
                 all_eqns_str += new_eqn_str
+    
+    #ic(non_algebraic_vars)
 
     # Replace any long domain symbols with the short version
     # e.g. "xn" gets replaced with "x"
@@ -1359,9 +1364,13 @@ def get_julia_mtk_model(model, geometry=None, tspan=None):
             else:
                 doms = ", " + domain_name_to_symbol[tuple(var.domain)]
 
-            all_ic_bc_str += (
-                f"   {variable_id_to_print_name[var.id]}(0{doms}) ~ {eqn_str},\n"
-            )
+            #ic(variable_id_to_print_name[var.id])
+            #ic(var.id in non_algebraic_vars)
+            # don't include IC's for algebraic variables since those will be determined by the DAE solver and these values are incorrect (they will evaluate to 0 here)
+            if var.id in non_algebraic_vars: 
+                all_ic_bc_str += (
+                    f"   {variable_id_to_print_name[var.id]}(0{doms}) ~ {eqn_str},\n"
+                )
     #ic(all_ic_bc_str)
     # Boundary conditions
     split_bc_items = []
